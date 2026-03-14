@@ -314,10 +314,15 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
       const entry = cal[key];
       if (!entry) continue;
 
-      if (entry.type === "combo") {
-        // Combo field: draw both X (if checked) and text side by side
+      if (entry.type === "combo" || entry.type === "combo_date") {
+        // Combo field: draw both X (if checked) and text/date side by side
         const isChecked = data.customFields[`${key}:checked`] === "true";
-        const textValue = value || "";
+        // For combo_date: convert yyyy-mm-dd → dd/mm/yyyy
+        let textValue = value || "";
+        if (entry.type === "combo_date" && textValue && textValue.includes("-")) {
+          const parts = textValue.split("-");
+          if (parts.length === 3) textValue = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
         const order = entry.comboOrder ?? "check_text";
         const size = getFontSize(cal, key, FS);
         const ws = getWordSpacing(cal, key);

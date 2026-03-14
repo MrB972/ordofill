@@ -170,6 +170,15 @@ export function getPreviewValueForField(
 
   // Combo fields — stored with both text and check in customFieldValues
   // text part in customFieldValues[key], check part in customFieldValues[key + ":checked"]
+  if (key.startsWith("combo_date_")) {
+    let dateVal = data.customFieldValues[key] ?? "";
+    // Convert yyyy-mm-dd → dd/mm/yyyy for display
+    if (dateVal && dateVal.includes("-")) {
+      const parts = dateVal.split("-");
+      if (parts.length === 3) dateVal = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateVal ? { text: dateVal, isCheck: false } : null;
+  }
   if (key.startsWith("combo_")) {
     const textVal = data.customFieldValues[key] ?? "";
     return textVal ? { text: textVal, isCheck: false } : null;

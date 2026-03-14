@@ -841,7 +841,8 @@ export default function FicheLaboPage() {
   const customTextFields = Object.entries(customFields).filter(([, f]) => f.type === "text");
   const customCheckFields = Object.entries(customFields).filter(([, f]) => f.type === "check");
   const customComboFields = Object.entries(customFields).filter(([, f]) => f.type === "combo");
-  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0 || customComboFields.length > 0;
+  const customComboDateFields = Object.entries(customFields).filter(([, f]) => f.type === "combo_date");
+  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0 || customComboFields.length > 0 || customComboDateFields.length > 0;
 
   const customFieldsCard = hasCustomFields ? (
     <Card className="glass rounded-xl border-purple-500/20">
@@ -923,6 +924,42 @@ export default function FicheLaboPage() {
                       placeholder={field.label}
                       className="h-8 text-sm flex-1"
                       data-testid={`combo-text-${key}`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {customComboDateFields.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CheckSquare className="size-3" />
+              <CalendarRange className="size-3" />
+              Combo (X + Date)
+            </div>
+            {customComboDateFields.map(([key, field]) => {
+              const order = field.comboOrder ?? "check_text";
+              const isChecked = customFieldValues[`${key}:checked`] === "true";
+              const rawDate = customFieldValues[key] ?? "";
+              return (
+                <div key={key} className="space-y-1">
+                  <Label className="text-xs">{field.label}</Label>
+                  <div className={`flex items-center gap-2 ${order === "text_check" ? "flex-row-reverse justify-end" : ""}`}>
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(v) => setCustomFieldValues((prev) => ({
+                        ...prev,
+                        [`${key}:checked`]: v === true ? "true" : "",
+                      }))}
+                      data-testid={`combo-date-check-${key}`}
+                    />
+                    <Input
+                      type="date"
+                      value={rawDate}
+                      onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                      className="h-8 text-sm flex-1"
+                      data-testid={`combo-date-input-${key}`}
                     />
                   </div>
                 </div>

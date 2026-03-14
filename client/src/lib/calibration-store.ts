@@ -17,13 +17,13 @@ export interface FieldCoord {
   x: number;
   y: number;
   label: string;
-  type: "check" | "text" | "combo";
+  type: "check" | "text" | "combo" | "combo_date";
   section: string;
   /** Font size in PDF points. Default: 8 for text, 8 for checks */
   fontSize: number;
   /** Extra spacing in points between words (separators: space, /, -, .). 0 = normal */
   wordSpacing: number;
-  /** For combo fields: order of check(X) and text. Default: "check_text" (X → Texte) */
+  /** For combo/combo_date fields: order of check(X) and text/date. Default: "check_text" (X → Texte/Date) */
   comboOrder?: ComboOrder;
 }
 

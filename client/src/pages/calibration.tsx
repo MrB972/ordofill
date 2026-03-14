@@ -106,7 +106,7 @@ export default function CalibrationPage() {
   // Add field dialog
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newFieldLabel, setNewFieldLabel] = useState("");
-  const [newFieldType, setNewFieldType] = useState<"text" | "check" | "combo">("text");
+  const [newFieldType, setNewFieldType] = useState<"text" | "check" | "combo" | "combo_date">("text");
   const [newFieldComboOrder, setNewFieldComboOrder] = useState<ComboOrder>("check_text");
   const [newFieldSection, setNewFieldSection] = useState("header");
   // Expanded detail row
@@ -243,7 +243,7 @@ export default function CalibrationPage() {
   const handleAddField = () => {
     if (!newFieldLabel.trim()) return;
     // Generate a unique key
-    const prefix = newFieldType === "check" ? "check_" : newFieldType === "combo" ? "combo_" : "text_";
+    const prefix = newFieldType === "check" ? "check_" : newFieldType === "combo" ? "combo_" : newFieldType === "combo_date" ? "combo_date_" : "text_";
     const slug = newFieldLabel.trim().replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]/g, "");
     let key = `${prefix}${slug}`;
     // Ensure uniqueness
@@ -260,7 +260,7 @@ export default function CalibrationPage() {
       section: newFieldSection,
       fontSize: 8,
       wordSpacing: 0,
-      ...(newFieldType === "combo" ? { comboOrder: newFieldComboOrder } : {}),
+      ...(newFieldType === "combo" || newFieldType === "combo_date" ? { comboOrder: newFieldComboOrder } : {}),
     };
     addField(key, newField);
     setShowAddDialog(false);
@@ -509,10 +509,11 @@ export default function CalibrationPage() {
                 let preview: { text: string; isCheck: boolean };
                 if (field.type === "check") {
                   preview = { text: "X", isCheck: true };
-                } else if (field.type === "combo") {
-                  // Build combo preview string: X + label or custom value
+                } else if (field.type === "combo" || field.type === "combo_date") {
+                  // Build combo preview string: X + label/date or custom value
                   const comboVal = getPreviewValueForField(key, previewData);
-                  const textPart = comboVal?.text || field.label;
+                  const fallback = field.type === "combo_date" ? "01/01/2026" : field.label;
+                  const textPart = comboVal?.text || fallback;
                   const order = field.comboOrder ?? "check_text";
                   preview = {
                     text: order === "check_text" ? `X ${textPart}` : `${textPart} X`,
@@ -587,7 +588,7 @@ export default function CalibrationPage() {
                 const isSelected = selectedKey === key;
                 const isDragged = dragging === key;
                 const color = getSectionColor(field.section);
-                const markerSize = field.type === "check" || field.type === "combo" ? 8 : 6;
+                const markerSize = field.type === "check" || field.type === "combo" || field.type === "combo_date" ? 8 : 6;
 
                 return (
                   <div
@@ -750,7 +751,7 @@ export default function CalibrationPage() {
                                 )}
 
                                 <span className="text-muted-foreground text-[10px] shrink-0">
-                                  {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : "T"}
+                                  {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : field.type === "combo_date" ? "X+D" : "T"}
                                 </span>
 
                                 {/* Coords */}
@@ -818,8 +819,8 @@ export default function CalibrationPage() {
                                     />
                                   </div>
 
-                                  {/* Word spacing — for text and combo fields */}
-                                  {(field.type === "text" || field.type === "combo") && (
+                                  {/* Word spacing — for text, combo, and combo_date fields */}
+                                  {(field.type === "text" || field.type === "combo" || field.type === "combo_date") && (
                                     <div className="space-y-1">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -841,7 +842,7 @@ export default function CalibrationPage() {
                                   )}
 
                                   {/* Combo order toggle */}
-                                  {field.type === "combo" && (
+                                  {(field.type === "combo" || field.type === "combo_date") && (
                                     <div className="space-y-1">
                                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                         <span>⇄</span>
@@ -855,8 +856,8 @@ export default function CalibrationPage() {
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                          <SelectItem value="check_text">X → Texte</SelectItem>
-                                          <SelectItem value="text_check">Texte → X</SelectItem>
+                                          <SelectItem value="check_text">X → {field.type === "combo_date" ? "Date" : "Texte"}</SelectItem>
+                                          <SelectItem value="text_check">{field.type === "combo_date" ? "Date" : "Texte"} → X</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </div>
@@ -902,7 +903,7 @@ export default function CalibrationPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Type</Label>
-              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check" | "combo")}>
+              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check" | "combo" | "combo_date")}>
                 <SelectTrigger className="text-sm" data-testid="new-field-type">
                   <SelectValue />
                 </SelectTrigger>
@@ -910,10 +911,11 @@ export default function CalibrationPage() {
                   <SelectItem value="text">Texte (T)</SelectItem>
                   <SelectItem value="check">Case à cocher (☑)</SelectItem>
                   <SelectItem value="combo">Combo (X + Texte)</SelectItem>
+                  <SelectItem value="combo_date">Combo (X + Date)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {newFieldType === "combo" && (
+            {(newFieldType === "combo" || newFieldType === "combo_date") && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Ordre</Label>
                 <Select value={newFieldComboOrder} onValueChange={(v) => setNewFieldComboOrder(v as ComboOrder)}>
@@ -921,8 +923,8 @@ export default function CalibrationPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="check_text">X → Texte</SelectItem>
-                    <SelectItem value="text_check">Texte → X</SelectItem>
+                    <SelectItem value="check_text">X → {newFieldType === "combo_date" ? "Date" : "Texte"}</SelectItem>
+                    <SelectItem value="text_check">{newFieldType === "combo_date" ? "Date" : "Texte"} → X</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
