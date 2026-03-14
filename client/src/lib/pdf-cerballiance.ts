@@ -30,6 +30,8 @@ interface CerballiancePDFData {
   inrCible: string;
   // Analyses grouped by section
   analysesBySection: { label: string; color: string; analyses: string[] }[];
+  // Custom fields added via calibration (key → value entered in form)
+  customFields?: Record<string, string>;
 }
 
 // Page height for Y coordinate conversion (top-down to bottom-up)
@@ -296,6 +298,26 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
       const entry = cal[key];
       if (entry) {
         check(entry.x, entry.y, key);
+      }
+    }
+  }
+
+  // ============================================================
+  // SECTION: CUSTOM FIELDS (user-added via calibration)
+  // ============================================================
+  if (data.customFields) {
+    for (const [key, value] of Object.entries(data.customFields)) {
+      const entry = cal[key];
+      if (!entry || !value) continue;
+
+      if (entry.type === "check") {
+        // Custom checkbox — draw X if value is truthy ("true")
+        if (value === "true") {
+          check(entry.x, entry.y, key);
+        }
+      } else {
+        // Custom text field
+        text(value, key, entry.x, entry.y);
       }
     }
   }

@@ -20,6 +20,9 @@ import {
   Clock,
   X,
   Crosshair,
+  Puzzle,
+  Type,
+  CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +49,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { getQueryFn } from "@/lib/queryClient";
 import { generateCerballiancePDF } from "@/lib/pdf-cerballiance";
+import { setPreviewData, type PreviewFormData } from "@/lib/preview-data-store";
+import { useCustomFields } from "@/lib/calibration-store";
 import { Link } from "wouter";
 import {
   getDrafts,
@@ -217,6 +222,64 @@ export default function FicheLaboPage() {
   // Collapsed sections
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
 
+  // Custom fields from calibration
+  const customFields = useCustomFields();
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  // Sync form data to preview store (for calibration preview mode)
+  useEffect(() => {
+    // Only sync if there's some data entered
+    if (!nomUsuel && !prenoms) return;
+    const dn = dateNaissance;
+    let formattedDN = dn;
+    if (dn && dn.includes("-")) {
+      const parts = dn.split("-");
+      if (parts.length === 3) formattedDN = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    const dp = datePrelevement;
+    let formattedDP = dp;
+    if (dp && dp.includes("-")) {
+      const parts = dp.split("-");
+      if (parts.length === 3) formattedDP = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    const checkSet = new Set<string>();
+    selectedAnalyses.forEach((a) => checkSet.add(`check_${a}`));
+    if (urgent) checkSet.add("check_urgent");
+    if (grossesse) checkSet.add("check_grossesse");
+    if (fievre) checkSet.add("check_fievre");
+    if (sexe === "M") checkSet.add("check_sexeH");
+    if (sexe === "F") checkSet.add("check_sexeF");
+    if (selectedAnticoagulant) checkSet.add(`check_${selectedAnticoagulant}`);
+    if (inrCible === "2-3") checkSet.add("check_inr23");
+    if (inrCible === "3-4.5" || inrCible === "3-4,5") checkSet.add("check_inr345");
+    setPreviewData({
+      ideName: user?.fullName ?? "",
+      ideCabinet: user?.cabinetName ?? "",
+      nomUsuel: nomUsuel.toUpperCase(),
+      prenoms,
+      dateNaissance: formattedDN,
+      sexe,
+      adresse,
+      telephone,
+      numSecu,
+      medecinTraitant,
+      datePrelevement: formattedDP,
+      heurePrelevement,
+      grossesse,
+      fievre,
+      traitements,
+      urgent,
+      anticoagulant: selectedAnticoagulant,
+      posologie,
+      inrCible,
+      selectedChecks: checkSet,
+      customFieldValues,
+    });
+  }, [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu,
+    medecinTraitant, datePrelevement, heurePrelevement, grossesse, fievre,
+    traitements, urgent, selectedAnticoagulant, posologie, inrCible,
+    selectedAnalyses, user, customFieldValues]);
+
   // Fetch OrdoFill patients
   const { data: ordofillPatients = [], isLoading: ordofillLoading } = useQuery<Patient[]>({
     queryKey: ["/api/patients"],
@@ -319,7 +382,8 @@ export default function FicheLaboPage() {
     selectedAnalyses: Array.from(selectedAnalyses),
     patientSource,
     patientId: selectedPatient?.id ?? null,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient]);
+    customFieldValues,
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -374,6 +438,7 @@ export default function FicheLaboPage() {
     setPosologie(d.posologie);
     setInrCible(d.inrCible);
     setSelectedAnalyses(new Set(d.selectedAnalyses));
+    setCustomFieldValues(d.customFieldValues ?? {});
     setPatientSource(d.patientSource);
     setSelectedPatient(null);
     setDraftsOpen(false);
@@ -409,6 +474,7 @@ export default function FicheLaboPage() {
     setPosologie("");
     setInrCible("");
     setSelectedAnalyses(new Set());
+    setCustomFieldValues({});
     setSelectedPatient(null);
     setDraftsOpen(false);
   };
@@ -468,6 +534,7 @@ export default function FicheLaboPage() {
         posologie,
         inrCible,
         analysesBySection,
+        customFields: customFieldValues,
       });
 
       toast({
@@ -732,6 +799,67 @@ export default function FicheLaboPage() {
     </Card>
   );
 
+  // --- Custom fields card ---
+  const customTextFields = Object.entries(customFields).filter(([, f]) => f.type === "text");
+  const customCheckFields = Object.entries(customFields).filter(([, f]) => f.type === "check");
+  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0;
+
+  const customFieldsCard = hasCustomFields ? (
+    <Card className="glass rounded-xl border-purple-500/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Puzzle className="size-4 text-purple-400" />
+          Champs personnalises
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {customTextFields.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Type className="size-3" />
+              Texte
+            </div>
+            {customTextFields.map(([key, field]) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-xs">{field.label}</Label>
+                <Input
+                  value={customFieldValues[key] ?? ""}
+                  onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                  placeholder={field.label}
+                  className="h-8 text-sm"
+                  data-testid={`custom-field-${key}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {customCheckFields.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CheckSquare className="size-3" />
+              Cases a cocher
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {customCheckFields.map(([key, field]) => (
+                <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={customFieldValues[key] === "true"}
+                    onCheckedChange={(v) => setCustomFieldValues((prev) => ({
+                      ...prev,
+                      [key]: v === true ? "true" : "",
+                    }))}
+                    data-testid={`custom-check-${key}`}
+                  />
+                  {field.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  ) : null;
+
   // --- Analyses panel ---
   const analysesPanel = (
     <div className="space-y-3" data-testid="analyses-panel">
@@ -893,6 +1021,7 @@ export default function FicheLaboPage() {
             {patientIdentityCard}
             {prelevementCard}
             {anticoagulantCard}
+            {customFieldsCard}
           </div>
         </ScrollArea>
 

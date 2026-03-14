@@ -356,6 +356,39 @@ export async function loadCalibrationFromSupabase(userId: string): Promise<boole
   }
 }
 
+// ---- Custom fields detection ----
+
+const _defaultKeys = new Set(Object.keys(getDefaultCalibration()));
+
+/**
+ * Returns only the fields that were added by the user (not part of the default set).
+ * These need custom input fields in the fiche-labo form.
+ */
+export function getCustomFields(): CalibrationMap {
+  const cal = getCalibration();
+  const custom: CalibrationMap = {};
+  for (const [key, field] of Object.entries(cal)) {
+    if (!_defaultKeys.has(key)) {
+      custom[key] = field;
+    }
+  }
+  return custom;
+}
+
+/**
+ * Hook that returns only custom (user-added) fields.
+ */
+export function useCustomFields(): CalibrationMap {
+  const cal = useCalibration();
+  const custom: CalibrationMap = {};
+  for (const [key, field] of Object.entries(cal)) {
+    if (!_defaultKeys.has(key)) {
+      custom[key] = field;
+    }
+  }
+  return custom;
+}
+
 // ---- React hook ----
 
 export function useCalibration(): CalibrationMap {

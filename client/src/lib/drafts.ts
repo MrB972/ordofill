@@ -31,6 +31,8 @@ export interface FicheDraftData {
   inrCible: string;
   // Analyses
   selectedAnalyses: string[];
+  // Custom fields from calibration
+  customFieldValues?: Record<string, string>;
   // Source info
   patientSource: "ordofill" | "ordocal";
   patientId: string | null;
