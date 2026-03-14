@@ -14,6 +14,8 @@ import {
   ChevronUp,
   Check,
   AlertCircle,
+  Users,
+  CalendarRange,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -31,6 +34,24 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import type { Patient } from "@shared/schema";
+
+// Unified patient shape for the form
+interface UnifiedPatient {
+  id: string;
+  nom: string;
+  prenom: string;
+  telephone: string | null;
+  date_naissance: string | null;
+  adresse: string | null;
+  ville: string | null;
+  code_postal: string | null;
+  numero_securite_sociale: string | null;
+  genre: string | null;
+  medecin_traitant: string | null;
+  notes: string | null;
+  source: "ordofill" | "ordocal";
+}
 
 // OrdoCAL patient type (snake_case from Supabase)
 interface OrdocalPatient {
@@ -119,10 +140,10 @@ const TUBE_SECTIONS: TubeSection[] = [
   { label: "Tube bleu (citrate)", color: "#3B82F6", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", textColor: "text-blue-400", analyses: TUBE_BLEU_ANALYSES, icon: "🔵" },
   { label: "Tube jaune 5mL", color: "#EAB308", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", textColor: "text-yellow-400", analyses: TUBE_JAUNE_ANALYSES, icon: "🟡" },
   { label: "Tube jaune 3.5mL (rhumato)", color: "#F59E0B", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30", textColor: "text-amber-400", analyses: TUBE_JAUNE_PETIT_ANALYSES, icon: "🟠" },
-  { label: "Sérologies", color: "#A855F7", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", textColor: "text-purple-400", analyses: SEROLOGIES, icon: "🟣" },
-  { label: "Analyses cardiaques", color: "#EF4444", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: ANALYSES_CARDIAQUES, icon: "❤️" },
+  { label: "S\u00e9rologies", color: "#A855F7", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", textColor: "text-purple-400", analyses: SEROLOGIES, icon: "🟣" },
+  { label: "Analyses cardiaques", color: "#EF4444", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: ANALYSES_CARDIAQUES, icon: "\u2764\uFE0F" },
   { label: "Tube violet EDTA", color: "#8B5CF6", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/30", textColor: "text-violet-400", analyses: TUBE_VIOLET_ANALYSES, icon: "🟣" },
-  { label: "Tube gris", color: "#6B7280", bgColor: "bg-gray-500/10", borderColor: "border-gray-500/30", textColor: "text-gray-400", analyses: TUBE_GRIS_ANALYSES, icon: "⚪" },
+  { label: "Tube gris", color: "#6B7280", bgColor: "bg-gray-500/10", borderColor: "border-gray-500/30", textColor: "text-gray-400", analyses: TUBE_GRIS_ANALYSES, icon: "\u26AA" },
   { label: "Tube vert", color: "#22C55E", bgColor: "bg-green-500/10", borderColor: "border-green-500/30", textColor: "text-green-400", analyses: TUBE_VERT_ANALYSES, icon: "🟢" },
   { label: "Tube rouge (Chlordecone)", color: "#DC2626", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: TUBE_ROUGE_ANALYSES, icon: "🔴" },
 ];
@@ -133,7 +154,8 @@ export default function FicheLaboPage() {
 
   // Patient selection
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPatient, setSelectedPatient] = useState<OrdocalPatient | null>(null);
+  const [patientSource, setPatientSource] = useState<"ordofill" | "ordocal">("ordofill");
+  const [selectedPatient, setSelectedPatient] = useState<UnifiedPatient | null>(null);
 
   // Form fields (auto-filled or manual)
   const [nomUsuel, setNomUsuel] = useState("");
@@ -170,13 +192,43 @@ export default function FicheLaboPage() {
   // Collapsed sections
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
 
+  // Fetch OrdoFill patients
+  const { data: ordofillPatients = [], isLoading: ordofillLoading } = useQuery<Patient[]>({
+    queryKey: ["/api/patients"],
+  });
+
   // Fetch OrdoCAL patients
-  const { data: ordocalPatients = [], isLoading: patientsLoading } = useQuery<OrdocalPatient[]>({
+  const { data: ordocalPatients = [], isLoading: ordocalLoading } = useQuery<OrdocalPatient[]>({
     queryKey: ["/api/ordocal/patients"],
   });
 
+  // Convert OrdoFill patients to unified shape
+  const unifiedOrdofill: UnifiedPatient[] = ordofillPatients.map((p) => ({
+    id: p.id,
+    nom: p.lastName,
+    prenom: p.firstName,
+    telephone: p.phone ?? null,
+    date_naissance: p.dateOfBirth ?? null,
+    adresse: p.address ?? null,
+    ville: p.city ?? null,
+    code_postal: p.postalCode ?? null,
+    numero_securite_sociale: p.numeroSecuriteSociale ?? null,
+    genre: p.gender ?? null,
+    medecin_traitant: p.medecinTraitant ?? null,
+    notes: p.notes ?? null,
+    source: "ordofill" as const,
+  }));
+
+  const unifiedOrdocal: UnifiedPatient[] = ordocalPatients.map((p) => ({
+    ...p,
+    source: "ordocal" as const,
+  }));
+
+  const currentPatients = patientSource === "ordofill" ? unifiedOrdofill : unifiedOrdocal;
+  const patientsLoading = patientSource === "ordofill" ? ordofillLoading : ordocalLoading;
+
   // Filter patients
-  const filteredPatients = ordocalPatients.filter((p) => {
+  const filteredPatients = currentPatients.filter((p) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -206,7 +258,7 @@ export default function FicheLaboPage() {
 
       toast({
         title: "Patient selectionne",
-        description: `${selectedPatient.prenom} ${selectedPatient.nom} — Donnees pre-remplies`,
+        description: `${selectedPatient.prenom} ${selectedPatient.nom} \u2014 Donnees pre-remplies`,
       });
     }
   }, [selectedPatient]);
@@ -289,15 +341,32 @@ export default function FicheLaboPage() {
         {/* Left: Patient selection + Identity */}
         <ScrollArea className="w-[380px] min-w-[340px] border-r">
           <div className="p-4 space-y-4">
-            {/* Patient search from OrdoCAL */}
+            {/* Patient source toggle + search */}
             <Card className="glass rounded-xl border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Sparkles className="size-4 text-primary" />
-                  Patient OrdoCAL
+                  <Users className="size-4 text-primary" />
+                  Selectionner un patient
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Toggle OrdoFill / OrdoCAL */}
+                <Tabs value={patientSource} onValueChange={(v) => {
+                  setPatientSource(v as "ordofill" | "ordocal");
+                  setSelectedPatient(null);
+                  setSearchTerm("");
+                }}>
+                  <TabsList className="w-full" data-testid="patient-source-tabs">
+                    <TabsTrigger value="ordofill" className="flex-1 text-xs" data-testid="tab-ordofill">
+                      <Users className="size-3 mr-1" />
+                      OrdoFill
+                    </TabsTrigger>
+                    <TabsTrigger value="ordocal" className="flex-1 text-xs" data-testid="tab-ordocal">
+                      <CalendarRange className="size-3 mr-1" />
+                      OrdoCAL
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
@@ -310,28 +379,28 @@ export default function FicheLaboPage() {
                 </div>
                 {patientsLoading ? (
                   <div className="text-xs text-muted-foreground text-center py-2">
-                    Chargement des patients OrdoCAL...
+                    Chargement des patients...
                   </div>
                 ) : (
                   <div className="max-h-[200px] overflow-y-auto space-y-1">
                     {filteredPatients.slice(0, 20).map((p) => (
                       <motion.button
-                        key={p.id}
+                        key={`${p.source}-${p.id}`}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                         className={`w-full text-left p-2 rounded-lg text-sm transition-colors ${
-                          selectedPatient?.id === p.id
+                          selectedPatient?.id === p.id && selectedPatient?.source === p.source
                             ? "bg-primary/20 border border-primary/30"
                             : "hover:bg-muted/50"
                         }`}
                         onClick={() => setSelectedPatient(p)}
-                        data-testid={`ordocal-patient-${p.id}`}
+                        data-testid={`patient-${p.source}-${p.id}`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium">
                             {p.prenom} {p.nom}
                           </span>
-                          {selectedPatient?.id === p.id && (
+                          {selectedPatient?.id === p.id && selectedPatient?.source === p.source && (
                             <UserCheck className="size-4 text-primary" />
                           )}
                         </div>
@@ -344,7 +413,10 @@ export default function FicheLaboPage() {
                     ))}
                     {filteredPatients.length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-2">
-                        Aucun patient trouve
+                        {patientSource === "ordofill"
+                          ? "Aucun patient OrdoFill. Ajoutez-en via la page Patients."
+                          : "Aucun patient OrdoCAL trouve."
+                        }
                       </p>
                     )}
                   </div>
@@ -363,25 +435,25 @@ export default function FicheLaboPage() {
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nom</span>
-                  <span className="font-medium">{user?.fullName ?? "—"}</span>
+                  <span className="font-medium">{user?.fullName ?? "\u2014"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cabinet</span>
                   <span className="font-medium text-right max-w-[180px] truncate">
-                    {user?.cabinetName ?? "—"}
+                    {user?.cabinetName ?? "\u2014"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tel</span>
-                  <span className="font-medium">{user?.phone ?? "—"}</span>
+                  <span className="font-medium">{user?.phone ?? "\u2014"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">RPPS</span>
-                  <span className="font-medium">{user?.numeroRpps ?? "—"}</span>
+                  <span className="font-medium">{user?.numeroRpps ?? "\u2014"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">ADELI</span>
-                  <span className="font-medium">{user?.numeroAdeli ?? "—"}</span>
+                  <span className="font-medium">{user?.numeroAdeli ?? "\u2014"}</span>
                 </div>
               </CardContent>
             </Card>
@@ -429,7 +501,7 @@ export default function FicheLaboPage() {
                     <Label className="text-xs">Sexe</Label>
                     <Select value={sexe} onValueChange={setSexe}>
                       <SelectTrigger className="h-8 text-sm" data-testid="field-sexe">
-                        <SelectValue placeholder="—" />
+                        <SelectValue placeholder="\u2014" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="M">Homme</SelectItem>
@@ -460,11 +532,11 @@ export default function FicheLaboPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">N° Securite Sociale</Label>
+                    <Label className="text-xs">N\u00b0 Securite Sociale</Label>
                     <Input
                       value={numSecu}
                       onChange={(e) => setNumSecu(e.target.value)}
-                      placeholder="N°SS"
+                      placeholder="N\u00b0SS"
                       className="h-8 text-sm"
                       data-testid="field-ss"
                     />
@@ -585,7 +657,7 @@ export default function FicheLaboPage() {
                       <Label className="text-xs">INR cible</Label>
                       <Select value={inrCible} onValueChange={setInrCible}>
                         <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="—" />
+                          <SelectValue placeholder="\u2014" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="2-3">INR cible 2-3</SelectItem>
