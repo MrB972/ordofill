@@ -13,6 +13,8 @@ import {
   Loader2,
   CalendarRange,
   Users,
+  Download,
+  Pencil,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -251,6 +253,40 @@ export default function PatientsPage() {
     return ssn.slice(0, 3) + " *** *** **";
   };
 
+  // Import a single OrdoCAL patient into OrdoFill
+  const importOrdocalPatient = async (op: OrdocalPatient) => {
+    const exists = patients.some(
+      (p) =>
+        p.firstName.toLowerCase() === (op.prenom ?? "").toLowerCase() &&
+        p.lastName.toLowerCase() === (op.nom ?? "").toLowerCase()
+    );
+    if (exists) {
+      toast({
+        title: "Patient deja present",
+        description: `${op.prenom} ${op.nom} est deja dans OrdoFill`,
+      });
+      return;
+    }
+    await createMutation.mutateAsync({
+      firstName: op.prenom ?? "",
+      lastName: op.nom ?? "",
+      dateOfBirth: op.date_naissance ?? "",
+      gender: op.genre ?? "",
+      phone: op.telephone ?? "",
+      email: "",
+      address: op.adresse ?? "",
+      city: op.ville ?? "",
+      postalCode: op.code_postal ?? "",
+      numeroSecuriteSociale: op.numero_securite_sociale ?? "",
+      medecinTraitant: op.medecin_traitant ?? "",
+      notes: op.notes ?? "",
+    });
+    toast({
+      title: "Patient importe",
+      description: `${op.prenom} ${op.nom} a ete ajoute a OrdoFill`,
+    });
+  };
+
   const handleSync = async () => {
     if (!user?.ordocalUserId) {
       toast({
@@ -262,38 +298,12 @@ export default function PatientsPage() {
     }
     setSyncing(true);
     try {
-      const res = await apiRequest("GET", `/api/ordocal/patients?ordocalUserId=${user.ordocalUserId}`);
-      const ordocalPts: OrdocalPatient[] = await res.json();
-      let imported = 0;
-      for (const op of ordocalPts) {
-        const exists = patients.some(
-          (p) =>
-            p.firstName.toLowerCase() === (op.prenom ?? "").toLowerCase() &&
-            p.lastName.toLowerCase() === (op.nom ?? "").toLowerCase()
-        );
-        if (!exists) {
-          await createMutation.mutateAsync({
-            firstName: op.prenom ?? "",
-            lastName: op.nom ?? "",
-            dateOfBirth: op.date_naissance ?? "",
-            gender: op.genre ?? "",
-            phone: op.telephone ?? "",
-            email: "",
-            address: op.adresse ?? "",
-            city: op.ville ?? "",
-            postalCode: op.code_postal ?? "",
-            numeroSecuriteSociale: op.numero_securite_sociale ?? "",
-            medecinTraitant: op.medecin_traitant ?? "",
-            notes: op.notes ?? "",
-          });
-          imported++;
-        }
-      }
+      // Only refresh the OrdoCAL patient list — do NOT auto-import into OrdoFill
+      await queryClient.refetchQueries({ queryKey: ["/api/ordocal/patients"] });
+      setViewSource("ordocal");
       toast({
         title: "Sync OrdoCAL terminee",
-        description: imported > 0
-          ? `${imported} patient(s) importe(s) depuis OrdoCAL`
-          : "Tous les patients sont deja synchronises",
+        description: "Liste des patients OrdoCAL actualisee",
       });
     } catch (err) {
       toast({
@@ -504,12 +514,24 @@ export default function PatientsPage() {
                           {getInitials(p.firstName, p.lastName)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">
                           {formatName(p.lastName, p.firstName)}
                         </p>
                         <p className="text-xs text-muted-foreground">{maskSSN(p.numeroSecuriteSociale)}</p>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(p);
+                        }}
+                        data-testid={`edit-patient-quick-${p.id}`}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
                     </div>
                     {p.city && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -757,6 +779,20 @@ export default function PatientsPage() {
                       {detailOrdocal.notes}
                     </p>
                   )}
+                </div>
+                <div className="pt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={async () => {
+                      await importOrdocalPatient(detailOrdocal);
+                      setDetailOrdocal(null);
+                    }}
+                    data-testid="import-ordocal-patient-btn"
+                  >
+                    <Download className="size-4 mr-2" />
+                    Importer dans OrdoFill
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground italic pt-2">
                   Patient provenant d'OrdoCAL (lecture seule)
