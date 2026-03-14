@@ -62,6 +62,11 @@ import {
   type FieldCoord,
 } from "@/lib/calibration-store";
 import { generateCerballiancePDF } from "@/lib/pdf-cerballiance";
+import {
+  usePreviewData,
+  getPreviewValueForField,
+  type PreviewFormData,
+} from "@/lib/preview-data-store";
 
 // PDF page dimensions (points)
 const PDF_W = 595.276;
@@ -91,6 +96,9 @@ export default function CalibrationPage() {
   const [showSidePanel, setShowSidePanel] = useState(true);
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
+  // Preview mode: show real data instead of labels
+  const [previewMode, setPreviewMode] = useState(false);
+  const previewData = usePreviewData();
   // Editing field label inline
   const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null);
   const [editingLabelValue, setEditingLabelValue] = useState("");
@@ -381,6 +389,16 @@ export default function CalibrationPage() {
             {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             <span className="hidden sm:inline">Enregistrer par défaut</span>
           </Button>
+          <Button
+            variant={previewMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPreviewMode(!previewMode)}
+            className={`text-xs gap-1 ${previewMode ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+            data-testid="toggle-preview"
+          >
+            <Eye className="size-3.5" />
+            <span className="hidden sm:inline">{previewMode ? "Aperçu données" : "Aperçu données"}</span>
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowMarkers(!showMarkers)} className="text-xs gap-1" data-testid="toggle-markers">
             {showMarkers ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
             <span className="hidden sm:inline">{showMarkers ? "Masquer" : "Afficher"}</span>
@@ -448,8 +466,70 @@ export default function CalibrationPage() {
               draggable={false}
             />
 
-            {/* Markers overlay */}
-            {showMarkers &&
+            {/* Preview mode: render actual text data on the PDF */}
+            {previewMode &&
+              Object.entries(calibration).map(([key, field]) => {
+                const preview = getPreviewValueForField(key, previewData);
+                if (!preview) return null;
+
+                const screenX = (field.x / PDF_W) * 100;
+                const screenY = (field.y / PDF_H) * 100;
+                // Scale font size from PDF points to screen pixels
+                const pxPerPt = zoom;
+                const fontSize = field.fontSize * pxPerPt;
+                // Word spacing in screen px
+                const wordSpacing = field.wordSpacing * pxPerPt;
+                const isSelected = selectedKey === key;
+                const isDragged = dragging === key;
+                const color = getSectionColor(field.section);
+
+                return (
+                  <div
+                    key={`preview-${key}`}
+                    className="absolute cursor-grab active:cursor-grabbing"
+                    style={{
+                      left: `${screenX}%`,
+                      top: `${screenY}%`,
+                      transform: preview.isCheck ? "translate(-25%, -60%)" : "translate(0, -80%)",
+                      zIndex: isSelected || isDragged ? 100 : 20,
+                    }}
+                    onPointerDown={(e) => handlePointerDown(key, e)}
+                    data-testid={`preview-${key}`}
+                  >
+                    {/* Render text with word-spacing applied on separators */}
+                    <span
+                      className="whitespace-nowrap flex items-baseline pointer-events-none select-none"
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        fontFamily: "Helvetica, Arial, sans-serif",
+                        fontWeight: preview.isCheck ? 700 : 400,
+                        color: "#000",
+                        lineHeight: 1,
+                        textShadow: isSelected ? `0 0 4px ${color}80` : "none",
+                      }}
+                    >
+                      {wordSpacing > 0 && !preview.isCheck
+                        ? preview.text.split(/(\s+|\/|-|\.)/).filter(Boolean).map((token, i) => (
+                            <span key={i} style={{ marginRight: i < preview.text.split(/(\s+|\/|-|\.)/).filter(Boolean).length - 1 ? `${wordSpacing}px` : 0 }}>
+                              {token}
+                            </span>
+                          ))
+                        : preview.text
+                      }
+                    </span>
+                    {/* Selection indicator */}
+                    {isSelected && (
+                      <div
+                        className="absolute -left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none"
+                        style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}` }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+
+            {/* Markers overlay (colored dots + labels) — hidden in preview mode */}
+            {showMarkers && !previewMode &&
               visibleFields.map(([key, field]) => {
                 const screenX = (field.x / PDF_W) * 100;
                 const screenY = (field.y / PDF_H) * 100;
