@@ -7,6 +7,11 @@ import {
   Shield,
   Upload,
   Download,
+  CalendarRange,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/lib/auth-context";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient as qc } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ParametresPage() {
@@ -30,6 +35,7 @@ export default function ParametresPage() {
   const [cabinetAddress, setCabinetAddress] = useState(user?.cabinetAddress ?? "");
   const [numeroRpps, setNumeroRpps] = useState(user?.numeroRpps ?? "");
   const [numeroAdeli, setNumeroAdeli] = useState(user?.numeroAdeli ?? "");
+  const [relinking, setRelinking] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: async (data: Record<string, string>) => {
@@ -218,6 +224,69 @@ export default function ParametresPage() {
         </TabsContent>
 
         <TabsContent value="compte">
+          {/* OrdoCAL Liaison — Automatique */}
+          <Card className="glass rounded-xl mb-6 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarRange className="size-5 text-primary" />
+                Liaison OrdoCAL
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                La liaison se fait automatiquement si votre email OrdoFill correspond
+                a votre compte OrdoCAL.
+              </p>
+              {user?.ordocalUserId ? (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <CheckCircle2 className="size-5 text-green-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-green-400">Compte OrdoCAL lie automatiquement</p>
+                    <p className="text-xs text-muted-foreground">
+                      Vos patients OrdoCAL sont accessibles dans la Fiche Labo et via Sync OrdoCAL.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                    <XCircle className="size-5 text-orange-400 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-orange-400">Aucun compte OrdoCAL detecte</p>
+                      <p className="text-xs text-muted-foreground">
+                        Aucun compte OrdoCAL n'a ete trouve avec l'email <strong>{user?.email}</strong>.
+                        Creez un compte sur OrdoCAL avec le meme email, puis cliquez sur Relancer.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={relinking}
+                    onClick={async () => {
+                      setRelinking(true);
+                      try {
+                        // Force re-check by reloading user profile
+                        await qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                        toast({ title: "Verification en cours..." });
+                      } finally {
+                        setTimeout(() => setRelinking(false), 1500);
+                      }
+                    }}
+                    data-testid="relink-ordocal"
+                  >
+                    {relinking ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="size-4 mr-2" />
+                    )}
+                    Relancer la detection
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="glass rounded-xl">
             <CardHeader>
               <CardTitle className="text-lg">Compte</CardTitle>
