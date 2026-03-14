@@ -21,6 +21,7 @@ export interface PreviewFormData {
   telephone: string;
   numSecu: string;
   medecinTraitant: string;
+  prescripteur: string;
   // Prelevement
   datePrelevement: string;
   heurePrelevement: string;
@@ -52,6 +53,7 @@ export function getSamplePreviewData(): PreviewFormData {
     telephone: "0696 78 90 12",
     numSecu: "2 85 06 972 123 456 78",
     medecinTraitant: "Dr. JEAN-LOUIS",
+    prescripteur: "Dr. JEAN-LOUIS",
     datePrelevement: "14/03/2026",
     heurePrelevement: "07:30",
     grossesse: false,
@@ -121,7 +123,7 @@ export function getPreviewValueForField(
 ): { text: string; isCheck: boolean } | null {
   // Text fields
   const textMap: Record<string, string> = {
-    text_prescripteur: data.medecinTraitant,
+    text_prescripteur: data.prescripteur,
     text_medecinTraitant: data.medecinTraitant,
     text_ideName: data.ideName,
     text_ideCabinet: data.ideCabinet,

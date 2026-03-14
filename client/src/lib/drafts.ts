@@ -18,6 +18,7 @@ export interface FicheDraftData {
   telephone: string;
   numSecu: string;
   medecinTraitant: string;
+  prescripteur: string;
   // Prelevement
   datePrelevement: string;
   heurePrelevement: string;

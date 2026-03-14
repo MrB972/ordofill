@@ -17,6 +17,7 @@ interface CerballiancePDFData {
   telephone: string;
   numSecu: string;
   medecinTraitant: string;
+  prescripteur: string;
   // Prelevement
   datePrelevement: string;
   heurePrelevement: string;
@@ -152,7 +153,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
   // ============================================================
   {
     const [px, py] = coord(cal, "text_prescripteur", 290, 102);
-    text(data.medecinTraitant, "text_prescripteur", px, py);
+    text(data.prescripteur, "text_prescripteur", px, py);
   }
   {
     const [mx, my] = coord(cal, "text_medecinTraitant", 530, 97);

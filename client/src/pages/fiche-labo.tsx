@@ -23,6 +23,7 @@ import {
   Puzzle,
   Type,
   CheckSquare,
+  CopyCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -191,6 +192,7 @@ export default function FicheLaboPage() {
   const [telephone, setTelephone] = useState("");
   const [numSecu, setNumSecu] = useState("");
   const [medecinTraitant, setMedecinTraitant] = useState("");
+  const [prescripteur, setPrescripteur] = useState("");
 
   // Prelevement
   const [datePrelevement, setDatePrelevement] = useState(
@@ -273,6 +275,7 @@ export default function FicheLaboPage() {
       telephone,
       numSecu,
       medecinTraitant,
+      prescripteur,
       datePrelevement: formattedDP,
       heurePrelevement,
       grossesse,
@@ -286,7 +289,7 @@ export default function FicheLaboPage() {
       customFieldValues,
     });
   }, [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu,
-    medecinTraitant, datePrelevement, heurePrelevement, grossesse, fievre,
+    medecinTraitant, prescripteur, datePrelevement, heurePrelevement, grossesse, fievre,
     traitements, urgent, selectedAnticoagulant, posologie, inrCible,
     selectedAnalyses, user, customFieldValues]);
 
@@ -362,6 +365,7 @@ export default function FicheLaboPage() {
       setTelephone(selectedPatient.telephone ?? "");
       setNumSecu(selectedPatient.numero_securite_sociale ?? "");
       setMedecinTraitant(selectedPatient.medecin_traitant ?? "");
+      setPrescripteur(selectedPatient.medecin_traitant ?? "");
 
       toast({
         title: "Patient sélectionné",
@@ -380,6 +384,7 @@ export default function FicheLaboPage() {
     telephone,
     numSecu,
     medecinTraitant,
+    prescripteur,
     datePrelevement,
     heurePrelevement,
     grossesse,
@@ -393,7 +398,7 @@ export default function FicheLaboPage() {
     patientSource,
     patientId: selectedPatient?.id ?? null,
     customFieldValues,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -438,6 +443,7 @@ export default function FicheLaboPage() {
     setTelephone(d.telephone);
     setNumSecu(d.numSecu);
     setMedecinTraitant(d.medecinTraitant);
+    setPrescripteur(d.prescripteur ?? d.medecinTraitant);
     setDatePrelevement(d.datePrelevement);
     setHeurePrelevement(d.heurePrelevement);
     setGrossesse(d.grossesse);
@@ -474,6 +480,7 @@ export default function FicheLaboPage() {
     setTelephone("");
     setNumSecu("");
     setMedecinTraitant("");
+    setPrescripteur("");
     setDatePrelevement(new Date().toISOString().slice(0, 10));
     setHeurePrelevement(new Date().toTimeString().slice(0, 5));
     setGrossesse(false);
@@ -534,6 +541,7 @@ export default function FicheLaboPage() {
         telephone,
         numSecu,
         medecinTraitant,
+        prescripteur,
         datePrelevement,
         heurePrelevement,
         grossesse,
@@ -726,9 +734,29 @@ export default function FicheLaboPage() {
             <Input value={numSecu} onChange={(e) => setNumSecu(e.target.value)} placeholder="N°SS" className="h-8 text-sm" data-testid="field-ss" />
           </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Médecin traitant / Prescripteur</Label>
-          <Input value={medecinTraitant} onChange={(e) => setMedecinTraitant(e.target.value)} placeholder="Dr. ..." className="h-8 text-sm" data-testid="field-medecin" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Médecin traitant</Label>
+            <Input value={medecinTraitant} onChange={(e) => setMedecinTraitant(e.target.value)} placeholder="Dr. ..." className="h-8 text-sm" data-testid="field-medecin" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Prescripteur</Label>
+            <div className="flex gap-1.5">
+              <Input value={prescripteur} onChange={(e) => setPrescripteur(e.target.value)} placeholder="Dr. ..." className="h-8 text-sm flex-1" data-testid="field-prescripteur" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0 text-muted-foreground hover:text-primary"
+                title="Copier le médecin traitant"
+                onClick={() => setPrescripteur(medecinTraitant)}
+                disabled={!medecinTraitant}
+                data-testid="copy-medecin-to-prescripteur"
+              >
+                <CopyCheck className="size-3.5" />
+              </Button>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
