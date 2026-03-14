@@ -260,6 +260,7 @@
 .badge-mutuelle { background: hsl(160 70% 45% / 0.15); color: hsl(160 70% 55%); border-color: hsl(160 70% 45% / 0.3); }
 .badge-prescription { background: hsl(280 70% 55% / 0.15); color: hsl(280 70% 65%); border-color: hsl(280 70% 55% / 0.3); }
 .badge-autre { background: hsl(var(--gold) / 0.15); color: hsl(var(--gold)); border-color: hsl(var(--gold) / 0.3); }
+.badge-laboratoire { background: hsl(200 80% 55% / 0.15); color: hsl(200 80% 65%); border-color: hsl(200 80% 55% / 0.3); }
 
 /* Gradient avatar */
 .avatar-gradient {
