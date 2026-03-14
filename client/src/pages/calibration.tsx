@@ -471,8 +471,12 @@ export default function CalibrationPage() {
             {/* Preview mode: render actual text data on the PDF */}
             {previewMode &&
               Object.entries(calibration).map(([key, field]) => {
-                const preview = getPreviewValueForField(key, previewData);
-                if (!preview) return null;
+                // For check fields: always show "X" in preview so positions can be calibrated
+                // For text fields: use real form data or fall back to label
+                const preview = field.type === "check"
+                  ? { text: "X", isCheck: true }
+                  : (getPreviewValueForField(key, previewData) ?? { text: field.label, isCheck: false });
+                if (!preview.text) return null;
 
                 const screenX = (field.x / PDF_W) * 100;
                 const screenY = (field.y / PDF_H) * 100;
