@@ -122,15 +122,23 @@ const TUBE_SECTION_CONFIGS: TubeSectionConfig[] = [
   { label: "Tube rouge (Chlordecone)", calibrationSectionId: "chlordecone", color: "#DC2626", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", icon: "\u{1F534}" },
 ];
 
+/** An analysis entry: internal key (for calibration mapping) + display label */
+interface AnalysisEntry {
+  /** Internal identifier = calibration key without "check_" prefix */
+  id: string;
+  /** Display label (from calibration field.label, user-editable) */
+  label: string;
+}
+
 /**
  * Build analyses list for a section from calibration data.
  * Only includes "check_" fields from the given section.
- * The analysis name = the key with "check_" prefix stripped.
+ * Returns both the internal id (key minus "check_") and the display label.
  */
-function getAnalysesFromCalibration(cal: CalibrationMap, sectionId: string): string[] {
+function getAnalysesFromCalibration(cal: CalibrationMap, sectionId: string): AnalysisEntry[] {
   return Object.entries(cal)
     .filter(([key, field]) => field.section === sectionId && field.type === "check" && key.startsWith("check_"))
-    .map(([key]) => key.replace(/^check_/, ""));
+    .map(([key, field]) => ({ id: key.replace(/^check_/, ""), label: field.label }));
 }
 
 interface TubeSection {
@@ -140,13 +148,13 @@ interface TubeSection {
   bgColor: string;
   borderColor: string;
   textColor: string;
-  analyses: string[];
+  analyses: AnalysisEntry[];
   icon: string;
 }
 
-/** Anticoagulant names are derived from the 'anticoagulant' calibration section,
+/** Anticoagulant entries derived from the 'anticoagulant' calibration section,
  *  excluding special keys (inr23, inr345). */
-function getAnticoagulantsFromCalibration(cal: CalibrationMap): string[] {
+function getAnticoagulantsFromCalibration(cal: CalibrationMap): AnalysisEntry[] {
   return Object.entries(cal)
     .filter(([key, field]) =>
       field.section === "anticoagulant" &&
@@ -154,7 +162,7 @@ function getAnticoagulantsFromCalibration(cal: CalibrationMap): string[] {
       key.startsWith("check_") &&
       !key.startsWith("check_inr")
     )
-    .map(([key]) => key.replace(/^check_/, ""));
+    .map(([key, field]) => ({ id: key.replace(/^check_/, ""), label: field.label }));
 }
 
 export default function FicheLaboPage() {
@@ -507,7 +515,7 @@ export default function FicheLaboPage() {
       .map((s) => ({
         label: s.label,
         color: s.color,
-        analyses: s.analyses.filter((a) => selectedAnalyses.has(a)),
+        analyses: s.analyses.filter((a) => selectedAnalyses.has(a.id)).map((a) => a.id),
       }))
       .filter((s) => s.analyses.length > 0);
 
@@ -776,7 +784,7 @@ export default function FicheLaboPage() {
           <SelectTrigger className="h-8 text-sm" data-testid="field-anticoagulant"><SelectValue placeholder="Aucun anticoagulant" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Aucun</SelectItem>
-            {ANTICOAGULANTS.map((a) => (<SelectItem key={a} value={a}>{a}</SelectItem>))}
+            {ANTICOAGULANTS.map((a) => (<SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>))}
           </SelectContent>
         </Select>
         {selectedAnticoagulant && selectedAnticoagulant !== "none" && (
@@ -913,7 +921,7 @@ export default function FicheLaboPage() {
 
       {TUBE_SECTIONS.map((section, sectionIdx) => {
         const isCollapsed = collapsedSections.has(sectionIdx);
-        const sectionCount = section.analyses.filter((a) => selectedAnalyses.has(a)).length;
+        const sectionCount = section.analyses.filter((a) => selectedAnalyses.has(a.id)).length;
 
         return (
           <motion.div key={section.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sectionIdx * 0.04 }} className={`rounded-xl border ${section.borderColor} ${section.bgColor} overflow-hidden`}>
@@ -934,11 +942,11 @@ export default function FicheLaboPage() {
                   <div className="px-3 pb-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1">
                       {section.analyses.map((analysis) => {
-                        const isChecked = selectedAnalyses.has(analysis);
+                        const isChecked = selectedAnalyses.has(analysis.id);
                         return (
-                          <label key={analysis} className={`flex items-center gap-2 p-1.5 rounded-md text-xs cursor-pointer transition-colors ${isChecked ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-muted-foreground"}`} data-testid={`analysis-${analysis.replace(/\s/g, "-")}`}>
-                            <Checkbox checked={isChecked} onCheckedChange={() => toggleAnalysis(analysis)} className="size-3.5" />
-                            <span className="leading-tight">{analysis}</span>
+                          <label key={analysis.id} className={`flex items-center gap-2 p-1.5 rounded-md text-xs cursor-pointer transition-colors ${isChecked ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-muted-foreground"}`} data-testid={`analysis-${analysis.id.replace(/\s/g, "-")}`}>
+                            <Checkbox checked={isChecked} onCheckedChange={() => toggleAnalysis(analysis.id)} className="size-3.5" />
+                            <span className="leading-tight">{analysis.label}</span>
                           </label>
                         );
                       })}
