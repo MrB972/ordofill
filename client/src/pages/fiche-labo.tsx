@@ -152,15 +152,15 @@ interface TubeSection {
 }
 
 const TUBE_SECTIONS: TubeSection[] = [
-  { label: "Tube bleu (citrate)", color: "#3B82F6", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", textColor: "text-blue-400", analyses: TUBE_BLEU_ANALYSES, icon: "🔵" },
-  { label: "Tube jaune 5mL", color: "#EAB308", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", textColor: "text-yellow-400", analyses: TUBE_JAUNE_ANALYSES, icon: "🟡" },
-  { label: "Tube jaune 3.5mL (rhumato)", color: "#F59E0B", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30", textColor: "text-amber-400", analyses: TUBE_JAUNE_PETIT_ANALYSES, icon: "🟠" },
-  { label: "Sérologies", color: "#A855F7", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", textColor: "text-purple-400", analyses: SEROLOGIES, icon: "🟣" },
-  { label: "Analyses cardiaques", color: "#EF4444", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: ANALYSES_CARDIAQUES, icon: "❤️" },
-  { label: "Tube violet EDTA", color: "#8B5CF6", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/30", textColor: "text-violet-400", analyses: TUBE_VIOLET_ANALYSES, icon: "🟣" },
-  { label: "Tube gris", color: "#6B7280", bgColor: "bg-gray-500/10", borderColor: "border-gray-500/30", textColor: "text-gray-400", analyses: TUBE_GRIS_ANALYSES, icon: "⚪" },
-  { label: "Tube vert", color: "#22C55E", bgColor: "bg-green-500/10", borderColor: "border-green-500/30", textColor: "text-green-400", analyses: TUBE_VERT_ANALYSES, icon: "🟢" },
-  { label: "Tube rouge (Chlordecone)", color: "#DC2626", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: TUBE_ROUGE_ANALYSES, icon: "🔴" },
+  { label: "Tube bleu (citrate)", color: "#3B82F6", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", textColor: "text-blue-400", analyses: TUBE_BLEU_ANALYSES, icon: "\u{1F535}" },
+  { label: "Tube jaune 5mL", color: "#EAB308", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", textColor: "text-yellow-400", analyses: TUBE_JAUNE_ANALYSES, icon: "\u{1F7E1}" },
+  { label: "Tube jaune 3.5mL (rhumato)", color: "#F59E0B", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30", textColor: "text-amber-400", analyses: TUBE_JAUNE_PETIT_ANALYSES, icon: "\u{1F7E0}" },
+  { label: "S\u00e9rologies", color: "#A855F7", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", textColor: "text-purple-400", analyses: SEROLOGIES, icon: "\u{1F7E3}" },
+  { label: "Analyses cardiaques", color: "#EF4444", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: ANALYSES_CARDIAQUES, icon: "\u2764\ufe0f" },
+  { label: "Tube violet EDTA", color: "#8B5CF6", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/30", textColor: "text-violet-400", analyses: TUBE_VIOLET_ANALYSES, icon: "\u{1F7E3}" },
+  { label: "Tube gris", color: "#6B7280", bgColor: "bg-gray-500/10", borderColor: "border-gray-500/30", textColor: "text-gray-400", analyses: TUBE_GRIS_ANALYSES, icon: "\u26aa" },
+  { label: "Tube vert", color: "#22C55E", bgColor: "bg-green-500/10", borderColor: "border-green-500/30", textColor: "text-green-400", analyses: TUBE_VERT_ANALYSES, icon: "\u{1F7E2}" },
+  { label: "Tube rouge (Chlordecone)", color: "#DC2626", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: TUBE_ROUGE_ANALYSES, icon: "\u{1F534}" },
 ];
 
 export default function FicheLaboPage() {
@@ -598,7 +598,7 @@ export default function FicheLaboPage() {
         <CardTitle className="text-sm">Identite du patient</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Nom</Label>
             <Input value={nomUsuel} onChange={(e) => setNomUsuel(e.target.value)} placeholder="Nom usuel" className="h-8 text-sm" data-testid="field-nom" />
@@ -608,7 +608,7 @@ export default function FicheLaboPage() {
             <Input value={prenoms} onChange={(e) => setPrenoms(e.target.value)} placeholder="Prenoms" className="h-8 text-sm" data-testid="field-prenom" />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Date de naissance</Label>
             <Input type="date" value={dateNaissance} onChange={(e) => setDateNaissance(e.target.value)} className="h-8 text-sm" data-testid="field-dob" />
@@ -628,7 +628,7 @@ export default function FicheLaboPage() {
           <Label className="text-xs">Adresse</Label>
           <Input value={adresse} onChange={(e) => setAdresse(e.target.value)} placeholder="Adresse complète" className="h-8 text-sm" data-testid="field-adresse" />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Téléphone</Label>
             <Input value={telephone} onChange={(e) => setTelephone(e.target.value)} placeholder="06..." className="h-8 text-sm" data-testid="field-tel" />
@@ -653,7 +653,7 @@ export default function FicheLaboPage() {
         <CardTitle className="text-sm">Prélèvement</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Date</Label>
             <Input type="date" value={datePrelevement} onChange={(e) => setDatePrelevement(e.target.value)} className="h-8 text-sm" data-testid="field-date-prelev" />
@@ -700,7 +700,7 @@ export default function FicheLaboPage() {
           </SelectContent>
         </Select>
         {selectedAnticoagulant && selectedAnticoagulant !== "none" && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Posologie</Label>
               <Input value={posologie} onChange={(e) => setPosologie(e.target.value)} placeholder="Dose" className="h-8 text-sm" />

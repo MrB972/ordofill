@@ -96,7 +96,7 @@ export default function ParametresPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nom complet</Label>
                     <Input
@@ -123,7 +123,7 @@ export default function ParametresPage() {
                     data-testid="settings-phone"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Numéro RPPS</Label>
                     <Input
@@ -141,7 +141,7 @@ export default function ParametresPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nom du cabinet</Label>
                     <Input
@@ -295,12 +295,12 @@ export default function ParametresPage() {
               <CardTitle className="text-lg">Compte</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <Button variant="outline" data-testid="export-data">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button variant="outline" data-testid="export-data" className="w-full sm:w-auto">
                   <Download className="size-4 mr-2" />
                   Exporter mes données
                 </Button>
-                <Button variant="outline" data-testid="import-data">
+                <Button variant="outline" data-testid="import-data" className="w-full sm:w-auto">
                   <Upload className="size-4 mr-2" />
                   Importer des données
                 </Button>

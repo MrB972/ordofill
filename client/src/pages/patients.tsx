@@ -340,7 +340,7 @@ export default function PatientsPage() {
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-2">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Prenom</Label>
                       <Input
@@ -360,7 +360,7 @@ export default function PatientsPage() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Date de naissance</Label>
                       <Input
@@ -392,7 +392,7 @@ export default function PatientsPage() {
                       data-testid="patient-ssn"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Telephone</Label>
                       <Input
@@ -419,7 +419,7 @@ export default function PatientsPage() {
                       data-testid="patient-address"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Ville</Label>
                       <Input
