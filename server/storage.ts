@@ -291,7 +291,7 @@ export class MemStorage implements IStorage {
       email: "marie@cabinet-dupont.fr",
       phone: "06 12 34 56 78",
       cabinetName: "Cabinet Infirmier Dupont",
-      cabinetAddress: "15 Rue de la Santé, 75013 Paris",
+      cabinetAddress: "15 Rue de la Sant\u00e9, 75013 Paris",
       numeroRpps: "12345678901",
       numeroAdeli: "123456789",
       signatureUrl: null,
@@ -402,6 +402,7 @@ export class MemStorage implements IStorage {
       "c1000001-0000-0000-0000-000000000002",
       "c1000001-0000-0000-0000-000000000003",
       "c1000001-0000-0000-0000-000000000004",
+      "c1000001-0000-0000-0000-000000000005",
     ];
 
     const templatesData: Omit<FormTemplate, "createdAt" | "updatedAt">[] = [
@@ -419,7 +420,7 @@ export class MemStorage implements IStorage {
         detectedFields: [
           { name: "nom_patient", type: "text", label: "Nom du patient", x: 50, y: 120, width: 200, height: 30, page: 0 },
           { name: "prenom_patient", type: "text", label: "Prenom du patient", x: 260, y: 120, width: 200, height: 30, page: 0 },
-          { name: "numero_secu", type: "text", label: "N° Securite Sociale", x: 50, y: 170, width: 300, height: 30, page: 0 },
+          { name: "numero_secu", type: "text", label: "N\u00b0 Securite Sociale", x: 50, y: 170, width: 300, height: 30, page: 0 },
           { name: "date_soins", type: "date", label: "Date des soins", x: 50, y: 220, width: 150, height: 30, page: 0 },
           { name: "code_acte", type: "text", label: "Code acte", x: 50, y: 270, width: 100, height: 30, page: 0 },
           { name: "montant", type: "number", label: "Montant", x: 200, y: 270, width: 100, height: 30, page: 0 },
@@ -440,7 +441,7 @@ export class MemStorage implements IStorage {
         detectedFields: [
           { name: "nom_assure", type: "text", label: "Nom de l'assure", x: 50, y: 100, width: 200, height: 30, page: 0 },
           { name: "prenom_assure", type: "text", label: "Prenom de l'assure", x: 260, y: 100, width: 200, height: 30, page: 0 },
-          { name: "numero_adherent", type: "text", label: "N° Adherent", x: 50, y: 150, width: 250, height: 30, page: 0 },
+          { name: "numero_adherent", type: "text", label: "N\u00b0 Adherent", x: 50, y: 150, width: 250, height: 30, page: 0 },
           { name: "date_demande", type: "date", label: "Date de la demande", x: 50, y: 200, width: 150, height: 30, page: 0 },
           { name: "motif", type: "text", label: "Motif de la demande", x: 50, y: 250, width: 400, height: 60, page: 0 },
           { name: "accord_mutuelle", type: "checkbox", label: "Accord mutuelle", x: 50, y: 330, width: 20, height: 20, page: 0 },
@@ -487,6 +488,30 @@ export class MemStorage implements IStorage {
           { name: "adresse_arrivee", type: "text", label: "Adresse d'arrivee", x: 50, y: 200, width: 400, height: 30, page: 0 },
           { name: "date_transport", type: "date", label: "Date du transport", x: 50, y: 250, width: 150, height: 30, page: 0 },
           { name: "motif_transport", type: "text", label: "Motif du transport", x: 50, y: 300, width: 400, height: 60, page: 0 },
+        ],
+      },
+      {
+        id: templateIds[4],
+        userId: profileId,
+        name: "Fiche de transmission Cerballiance",
+        description: "Fiche de transmission de prelevements sanguins \u2014 MAR FO 023. V4. Formulaire officiel du reseau Cerballiance Martinique.",
+        originalFileUrl: null,
+        thumbnailUrl: null,
+        category: "Laboratoire",
+        isPublic: false,
+        uploadCount: 0,
+        fieldMappings: { type: "cerballiance_labo", route: "/fiche-labo" },
+        detectedFields: [
+          { name: "nom_usuel", type: "text", label: "Nom usuel", x: 30, y: 18, width: 25, height: 3, page: 0 },
+          { name: "prenoms", type: "text", label: "Prenoms", x: 58, y: 18, width: 25, height: 3, page: 0 },
+          { name: "date_naissance", type: "date", label: "Date de naissance", x: 30, y: 21, width: 15, height: 3, page: 0 },
+          { name: "adresse", type: "text", label: "Adresse", x: 30, y: 24, width: 50, height: 3, page: 0 },
+          { name: "sexe", type: "checkbox", label: "Sexe H/F", x: 82, y: 18, width: 10, height: 3, page: 0 },
+          { name: "telephone", type: "text", label: "Telephone", x: 82, y: 21, width: 15, height: 3, page: 0 },
+          { name: "numero_secu", type: "text", label: "N\u00b0 Securite Sociale", x: 30, y: 27, width: 30, height: 3, page: 0 },
+          { name: "medecin_traitant", type: "text", label: "Medecin traitant", x: 55, y: 9, width: 25, height: 3, page: 0 },
+          { name: "prescripteur", type: "text", label: "Prescripteur", x: 30, y: 9, width: 25, height: 3, page: 0 },
+          { name: "etablissement", type: "text", label: "Etablissement de soins", x: 5, y: 9, width: 25, height: 3, page: 0 },
         ],
       },
     ];
