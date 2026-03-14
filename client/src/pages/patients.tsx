@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 import type { Patient } from "@shared/schema";
 
 interface OrdocalPatient {
@@ -71,6 +72,7 @@ const staggerItem = {
 export default function PatientsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
@@ -216,9 +218,17 @@ export default function PatientsPage() {
           <Button
             variant="outline"
             onClick={async () => {
+              if (!user?.ordocalUserId) {
+                toast({
+                  title: "Compte OrdoCAL non li\u00e9",
+                  description: "Allez dans Param\u00e8tres pour lier votre compte OrdoCAL",
+                  variant: "destructive",
+                });
+                return;
+              }
               setSyncing(true);
               try {
-                const res = await apiRequest("GET", "/api/ordocal/patients");
+                const res = await apiRequest("GET", `/api/ordocal/patients?ordocalUserId=${user.ordocalUserId}`);
                 const ordocalPatients: OrdocalPatient[] = await res.json();
                 let imported = 0;
                 for (const op of ordocalPatients) {
