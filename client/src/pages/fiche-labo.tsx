@@ -19,6 +19,7 @@ import {
   FileText,
   Clock,
   X,
+  Crosshair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { getQueryFn } from "@/lib/queryClient";
 import { generateCerballiancePDF } from "@/lib/pdf-cerballiance";
+import { Link } from "wouter";
 import {
   getDrafts,
   saveDraft,
@@ -828,6 +830,17 @@ export default function FicheLaboPage() {
             <Save className="size-4 mr-1" />
             <span className="hidden sm:inline">Sauvegarder</span>
           </Button>
+          <Link href="/calibration">
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="calibrate-btn"
+              className="text-xs"
+            >
+              <Crosshair className="size-4 mr-1" />
+              <span className="hidden sm:inline">Calibrer</span>
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="sm"
