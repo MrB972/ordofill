@@ -28,7 +28,7 @@ const navItems = [
   { href: "/patients", label: "Patients", icon: Users },
   { href: "/remplissage", label: "Nouveau Remplissage", icon: PenTool },
   { href: "/historique", label: "Historique", icon: Clock },
-  { href: "/parametres", label: "Parametres", icon: Settings },
+  { href: "/parametres", label: "Paramètres", icon: Settings },
 ];
 
 export function AppSidebar() {
