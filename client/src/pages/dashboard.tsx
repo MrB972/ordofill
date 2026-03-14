@@ -96,7 +96,7 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      label: "Templates",
+      label: "Formulaires",
       value: stats?.templateCount ?? 0,
       icon: FileText,
       color: "text-primary",

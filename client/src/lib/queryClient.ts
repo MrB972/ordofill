@@ -94,7 +94,11 @@ async function handleRequest(method: string, url: string, body?: AnyData): Promi
     return await db.updateProfile(profileMatch[1], body);
   }
 
-  // ORDOCAL PATIENTS (cross-app) — pass ordocalUserId from query param
+  // ORDOCAL PATIENTS (cross-app)
+  const ordocalPatientMatch = url.match(/^\/api\/ordocal\/patients\/(.+)$/);
+  if (ordocalPatientMatch && method === "PATCH") {
+    return await db.updateOrdocalPatient(ordocalPatientMatch[1], body);
+  }
   if (url.startsWith("/api/ordocal/patients") && method === "GET") {
     const params = new URLSearchParams(url.split("?")[1] ?? "");
     const ordocalUserId = params.get("ordocalUserId");

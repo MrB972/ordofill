@@ -205,19 +205,47 @@ export async function getOrdocalPatients(ordocalUserId: string | null) {
   return data ?? [];
 }
 
+// ---- OrdoCAL Patient Update ----
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function updateOrdocalPatient(patientId: string, updates: Record<string, any>) {
+  const { data, error } = await supabase
+    .from("patients")
+    .update(updates)
+    .eq("id", patientId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // ---- Stats ----
 
 export async function getStats() {
-  const [templates, patients, filledForms] = await Promise.all([
+  // Current month range for filledThisMonth
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+
+  const [templates, patients, filledForms, filledThisMonth] = await Promise.all([
     supabase.from("ordofill_form_templates").select("id", { count: "exact", head: true }),
     supabase.from("ordofill_patients").select("id", { count: "exact", head: true }),
     supabase.from("ordofill_filled_forms").select("id", { count: "exact", head: true }),
+    supabase.from("ordofill_filled_forms").select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart)
+      .lt("created_at", monthEnd),
   ]);
+
+  const totalForms = filledForms.count ?? 0;
+  const totalMinutes = totalForms * 5;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const timeSaved = hours > 0 ? `${hours}h${minutes > 0 ? ` ${minutes}m` : ""}` : `${minutes}m`;
 
   return {
     templateCount: templates.count ?? 0,
     patientCount: patients.count ?? 0,
-    filledThisMonth: filledForms.count ?? 0,
-    timeSaved: `${(filledForms.count ?? 0) * 5}m`,
+    filledThisMonth: filledThisMonth.count ?? 0,
+    timeSaved,
   };
 }

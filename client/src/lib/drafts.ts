@@ -43,6 +43,9 @@ export interface FicheDraftData {
   fievre: boolean;
   traitements: string;
   urgent: boolean;
+  // Prescription
+  renouvelable: boolean;
+  dateRenouvelable: string;
   // Anticoagulant
   selectedAnticoagulant: string;
   posologie: string;

@@ -13,7 +13,6 @@ import {
   Loader2,
   CalendarRange,
   Users,
-  Download,
   Pencil,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,6 +86,18 @@ export default function PatientsPage() {
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
   const [detailPatient, setDetailPatient] = useState<Patient | null>(null);
   const [detailOrdocal, setDetailOrdocal] = useState<OrdocalPatient | null>(null);
+  const [editingOrdocal, setEditingOrdocal] = useState(false);
+  const [ocNom, setOcNom] = useState("");
+  const [ocPrenom, setOcPrenom] = useState("");
+  const [ocTelephone, setOcTelephone] = useState("");
+  const [ocDateNaissance, setOcDateNaissance] = useState("");
+  const [ocAdresse, setOcAdresse] = useState("");
+  const [ocVille, setOcVille] = useState("");
+  const [ocCodePostal, setOcCodePostal] = useState("");
+  const [ocNumSecu, setOcNumSecu] = useState("");
+  const [ocGenre, setOcGenre] = useState("");
+  const [ocMedecin, setOcMedecin] = useState("");
+  const [ocNotes, setOcNotes] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [viewSource, setViewSource] = useState<"ordofill" | "ordocal">("ordofill");
 
@@ -147,6 +158,77 @@ export default function PatientsPage() {
     },
   });
 
+  const updateOrdocalMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, string | null> }) => {
+      const res = await apiRequest("PATCH", `/api/ordocal/patients/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ordocal/patients"] });
+    },
+  });
+
+  const openEditOrdocal = (p: OrdocalPatient) => {
+    setOcNom(p.nom ?? "");
+    setOcPrenom(p.prenom ?? "");
+    setOcTelephone(p.telephone ?? "");
+    setOcDateNaissance(p.date_naissance ?? "");
+    setOcAdresse(p.adresse ?? "");
+    setOcVille(p.ville ?? "");
+    setOcCodePostal(p.code_postal ?? "");
+    setOcNumSecu(p.numero_securite_sociale ?? "");
+    setOcGenre(p.genre ?? "");
+    setOcMedecin(p.medecin_traitant ?? "");
+    setOcNotes(p.notes ?? "");
+    setDetailOrdocal(p);
+    setEditingOrdocal(true);
+  };
+
+  const handleSaveOrdocal = async () => {
+    if (!detailOrdocal) return;
+    const updates = {
+      nom: ocNom,
+      prenom: ocPrenom,
+      telephone: ocTelephone || null,
+      date_naissance: ocDateNaissance || null,
+      adresse: ocAdresse || null,
+      ville: ocVille || null,
+      code_postal: ocCodePostal || null,
+      numero_securite_sociale: ocNumSecu || null,
+      genre: ocGenre || null,
+      medecin_traitant: ocMedecin || null,
+      notes: ocNotes || null,
+    };
+    await updateOrdocalMutation.mutateAsync({ id: detailOrdocal.id, data: updates });
+    // Bi-directional sync: update matching OrdoFill patient if exists
+    const matchingOrdofill = patients.find(
+      (p) =>
+        p.firstName.toLowerCase() === (detailOrdocal.prenom ?? "").toLowerCase() &&
+        p.lastName.toLowerCase() === (detailOrdocal.nom ?? "").toLowerCase()
+    );
+    if (matchingOrdofill) {
+      await updateMutation.mutateAsync({
+        id: matchingOrdofill.id,
+        data: {
+          firstName: ocPrenom,
+          lastName: ocNom,
+          phone: ocTelephone,
+          dateOfBirth: ocDateNaissance,
+          address: ocAdresse,
+          city: ocVille,
+          postalCode: ocCodePostal,
+          numeroSecuriteSociale: ocNumSecu,
+          gender: ocGenre,
+          medecinTraitant: ocMedecin,
+          notes: ocNotes,
+        },
+      });
+    }
+    toast({ title: "Patient mis a jour", description: `${ocPrenom} ${ocNom} sauvegarde` });
+    setDetailOrdocal(null);
+    setEditingOrdocal(false);
+  };
+
   // Sort alphabetically by last name then first name
   const sortedPatients = [...patients].sort((a, b) => {
     const cmp = (a.lastName ?? "").localeCompare(b.lastName ?? "", "fr", { sensitivity: "base" });
@@ -160,7 +242,17 @@ export default function PatientsPage() {
     return (a.prenom ?? "").localeCompare(b.prenom ?? "", "fr", { sensitivity: "base" });
   });
 
-  const filteredOrdofill = sortedPatients.filter((p) => {
+  // Deduplicate: remove OrdoFill patients that also exist in OrdoCal (by name)
+  const ordocalNameSet = new Set(
+    ordocalPatients.map(
+      (p) => `${(p.nom ?? "").toLowerCase()}|${(p.prenom ?? "").toLowerCase()}`
+    )
+  );
+  const deduplicatedOrdofill = sortedPatients.filter(
+    (p) => !ordocalNameSet.has(`${(p.lastName ?? "").toLowerCase()}|${(p.firstName ?? "").toLowerCase()}`)
+  );
+
+  const filteredOrdofill = deduplicatedOrdofill.filter((p) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -590,13 +682,25 @@ export default function PatientsPage() {
                               {getInitials(p.prenom, p.nom)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm truncate">
                               {formatName(p.nom, p.prenom)}
                             </p>
                             <p className="text-xs text-muted-foreground">{maskSSN(p.numero_securite_sociale)}</p>
                           </div>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 opacity-60 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditOrdocal(p);
+                            }}
+                            data-testid={`edit-ordocal-quick-${p.id}`}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
                             OrdoCAL
                           </Badge>
                         </div>
@@ -719,9 +823,11 @@ export default function PatientsPage() {
         </SheetContent>
       </Sheet>
 
-      {/* OrdoCAL patient detail sheet (read-only) */}
-      <Sheet open={!!detailOrdocal} onOpenChange={(open) => !open && setDetailOrdocal(null)}>
-        <SheetContent data-testid="ordocal-detail-sheet">
+      {/* OrdoCAL patient detail sheet (editable) */}
+      <Sheet open={!!detailOrdocal} onOpenChange={(open) => {
+        if (!open) { setDetailOrdocal(null); setEditingOrdocal(false); }
+      }}>
+        <SheetContent data-testid="ordocal-detail-sheet" className="overflow-y-auto">
           {detailOrdocal && (
             <>
               <SheetHeader>
@@ -731,72 +837,133 @@ export default function PatientsPage() {
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 space-y-4">
-                <div className="flex justify-center">
-                  <Avatar className="size-16">
-                    <AvatarFallback className="avatar-gradient text-xl font-bold">
-                      {getInitials(detailOrdocal.prenom, detailOrdocal.nom)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <div className="space-y-3 text-sm">
-                  {detailOrdocal.numero_securite_sociale && (
-                    <div className="flex items-center gap-2">
-                      <User className="size-4 text-muted-foreground" />
-                      <span>N. SS: {detailOrdocal.numero_securite_sociale}</span>
+                {!editingOrdocal ? (
+                  <>
+                    <div className="flex justify-center">
+                      <Avatar className="size-16">
+                        <AvatarFallback className="avatar-gradient text-xl font-bold">
+                          {getInitials(detailOrdocal.prenom, detailOrdocal.nom)}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
-                  )}
-                  {detailOrdocal.telephone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="size-4 text-muted-foreground" />
-                      <span>{detailOrdocal.telephone}</span>
+                    <div className="space-y-3 text-sm">
+                      {detailOrdocal.numero_securite_sociale && (
+                        <div className="flex items-center gap-2">
+                          <User className="size-4 text-muted-foreground" />
+                          <span>N. SS: {detailOrdocal.numero_securite_sociale}</span>
+                        </div>
+                      )}
+                      {detailOrdocal.telephone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="size-4 text-muted-foreground" />
+                          <span>{detailOrdocal.telephone}</span>
+                        </div>
+                      )}
+                      {detailOrdocal.ville && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="size-4 text-muted-foreground" />
+                          <span>
+                            {detailOrdocal.adresse && `${detailOrdocal.adresse}, `}
+                            {detailOrdocal.code_postal && `${detailOrdocal.code_postal} `}
+                            {detailOrdocal.ville}
+                          </span>
+                        </div>
+                      )}
+                      {detailOrdocal.date_naissance && (
+                        <p>
+                          <span className="text-muted-foreground">Ne(e) le: </span>
+                          {new Date(detailOrdocal.date_naissance).toLocaleDateString("fr-FR")}
+                        </p>
+                      )}
+                      {detailOrdocal.medecin_traitant && (
+                        <p>
+                          <span className="text-muted-foreground">Medecin traitant: </span>
+                          {detailOrdocal.medecin_traitant}
+                        </p>
+                      )}
+                      {detailOrdocal.notes && (
+                        <p>
+                          <span className="text-muted-foreground">Notes: </span>
+                          {detailOrdocal.notes}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  {detailOrdocal.ville && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="size-4 text-muted-foreground" />
-                      <span>
-                        {detailOrdocal.adresse && `${detailOrdocal.adresse}, `}
-                        {detailOrdocal.code_postal && `${detailOrdocal.code_postal} `}
-                        {detailOrdocal.ville}
-                      </span>
+                    <div className="pt-4">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => openEditOrdocal(detailOrdocal)}
+                        data-testid="edit-ordocal-patient-btn"
+                      >
+                        <Pencil className="size-4 mr-2" />
+                        Modifier
+                      </Button>
                     </div>
-                  )}
-                  {detailOrdocal.date_naissance && (
-                    <p>
-                      <span className="text-muted-foreground">Ne(e) le: </span>
-                      {new Date(detailOrdocal.date_naissance).toLocaleDateString("fr-FR")}
-                    </p>
-                  )}
-                  {detailOrdocal.medecin_traitant && (
-                    <p>
-                      <span className="text-muted-foreground">Medecin traitant: </span>
-                      {detailOrdocal.medecin_traitant}
-                    </p>
-                  )}
-                  {detailOrdocal.notes && (
-                    <p>
-                      <span className="text-muted-foreground">Notes: </span>
-                      {detailOrdocal.notes}
-                    </p>
-                  )}
-                </div>
-                <div className="pt-4">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={async () => {
-                      await importOrdocalPatient(detailOrdocal);
-                      setDetailOrdocal(null);
-                    }}
-                    data-testid="import-ordocal-patient-btn"
-                  >
-                    <Download className="size-4 mr-2" />
-                    Importer dans OrdoFill
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground italic pt-2">
-                  Patient provenant d'OrdoCAL (lecture seule)
-                </p>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Nom</Label>
+                        <Input value={ocNom} onChange={(e) => setOcNom(e.target.value)} data-testid="oc-nom" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Prenom</Label>
+                        <Input value={ocPrenom} onChange={(e) => setOcPrenom(e.target.value)} data-testid="oc-prenom" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Date de naissance</Label>
+                        <Input type="date" value={ocDateNaissance} onChange={(e) => setOcDateNaissance(e.target.value)} data-testid="oc-dob" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Genre</Label>
+                        <Select value={ocGenre} onValueChange={setOcGenre}>
+                          <SelectTrigger data-testid="oc-genre"><SelectValue placeholder="---" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="M">Masculin</SelectItem>
+                            <SelectItem value="F">Feminin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">N. Securite Sociale</Label>
+                      <Input value={ocNumSecu} onChange={(e) => setOcNumSecu(e.target.value)} data-testid="oc-ssn" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Telephone</Label>
+                      <Input value={ocTelephone} onChange={(e) => setOcTelephone(e.target.value)} data-testid="oc-tel" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Adresse</Label>
+                      <Input value={ocAdresse} onChange={(e) => setOcAdresse(e.target.value)} data-testid="oc-adresse" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Ville</Label>
+                        <Input value={ocVille} onChange={(e) => setOcVille(e.target.value)} data-testid="oc-ville" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Code postal</Label>
+                        <Input value={ocCodePostal} onChange={(e) => setOcCodePostal(e.target.value)} data-testid="oc-cp" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Medecin traitant</Label>
+                      <Input value={ocMedecin} onChange={(e) => setOcMedecin(e.target.value)} data-testid="oc-medecin" />
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button className="flex-1" onClick={handleSaveOrdocal} disabled={updateOrdocalMutation.isPending} data-testid="save-ordocal-btn">
+                        {updateOrdocalMutation.isPending ? "Sauvegarde..." : "Enregistrer"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setEditingOrdocal(false)} data-testid="cancel-ordocal-btn">
+                        Annuler
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

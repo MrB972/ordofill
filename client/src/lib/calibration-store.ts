@@ -67,9 +67,11 @@ export function getDefaultCalibration(): CalibrationMap {
     "text_numSecu": t(310, 222, "N°SS", "patient"),
     "text_traitements": t(130, 270, "Traitements", "clinique", 6.5),
     "text_posologie": t(200, 377, "Posologie", "anticoagulant"),
+    "text_dateRenouvelable": t(220, 102, "Date renouvelable", "header"),
 
     // ============ CHECKBOXES ============
     "check_urgent": c(492, 102, "Urgent", "header"),
+    "check_renouvelable": c(113, 102, "Renouvelable", "header"),
 
     // Résultats: Médecin
     "check_\u00e0_Faxer": c(109, 125, "\u00e0 Faxer", "header"),
@@ -377,6 +379,13 @@ export async function loadCalibrationFromSupabase(userId: string): Promise<boole
     for (const key of Object.keys(cal)) {
       if (typeof cal[key].fontSize !== "number") cal[key].fontSize = 8;
       if (typeof cal[key].wordSpacing !== "number") cal[key].wordSpacing = 0;
+    }
+    // Merge with defaults: any keys in defaults missing from Supabase data get backfilled
+    const defaults = getDefaultCalibration();
+    for (const [key, field] of Object.entries(defaults)) {
+      if (!cal[key]) {
+        cal[key] = field;
+      }
     }
     setCalibration(cal);
     return true;

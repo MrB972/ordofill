@@ -227,6 +227,10 @@ export default function FicheLaboPage() {
   const [traitements, setTraitements] = useState("");
   const [urgent, setUrgent] = useState(false);
 
+  // Prescription
+  const [renouvelable, setRenouvelable] = useState(false);
+  const [dateRenouvelable, setDateRenouvelable] = useState("");
+
   // Anticoagulant
   const [selectedAnticoagulant, setSelectedAnticoagulant] = useState("");
   const [posologie, setPosologie] = useState("");
@@ -276,6 +280,7 @@ export default function FicheLaboPage() {
     const checkSet = new Set<string>();
     selectedAnalyses.forEach((a) => checkSet.add(`check_${a}`));
     if (urgent) checkSet.add("check_urgent");
+    if (renouvelable) checkSet.add("check_renouvelable");
     if (grossesse) checkSet.add("check_grossesse");
     if (fievre) checkSet.add("check_fievre");
     if (sexe === "M") checkSet.add("check_sexeH");
@@ -322,12 +327,15 @@ export default function FicheLaboPage() {
       mutuelle,
       finDeDroit: (() => { const fd = finDeDroit; if (fd && fd.includes("-")) { const p = fd.split("-"); if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`; } return fd; })(),
       selectedChecks: checkSet,
+      renouvelable,
+      dateRenouvelable,
       customFieldValues,
     });
   }, [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu,
     medecinTraitant, prescripteur, mutuelle, finDeDroit,
     datePrelevement, heurePrelevement, grossesse, fievre,
-    traitements, urgent, selectedAnticoagulant, posologie, inrCible,
+    traitements, urgent, renouvelable, dateRenouvelable,
+    selectedAnticoagulant, posologie, inrCible,
     resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms,
     resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande,
     pieceCni, piecePasseport, pieceTitre,
@@ -368,7 +376,20 @@ export default function FicheLaboPage() {
     source: "ordocal" as const,
   }));
 
-  const currentPatients = patientSource === "ordofill" ? unifiedOrdofill : unifiedOrdocal;
+  // Deduplicate: remove OrdoFill patients that already exist in OrdoCal (matched by name)
+  const ordocalNameSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of ordocalPatients) {
+      s.add(`${(p.nom ?? "").toLowerCase()}|${(p.prenom ?? "").toLowerCase()}`);
+    }
+    return s;
+  }, [ordocalPatients]);
+
+  const filteredOrdofill = unifiedOrdofill.filter(
+    (p) => !ordocalNameSet.has(`${(p.nom ?? "").toLowerCase()}|${(p.prenom ?? "").toLowerCase()}`)
+  );
+
+  const currentPatients = patientSource === "ordofill" ? filteredOrdofill : unifiedOrdocal;
   const patientsLoading = patientSource === "ordofill" ? ordofillLoading : ordocalLoading;
 
   // Sort and filter patients
@@ -438,6 +459,8 @@ export default function FicheLaboPage() {
     fievre,
     traitements,
     urgent,
+    renouvelable,
+    dateRenouvelable,
     selectedAnticoagulant,
     posologie,
     inrCible,
@@ -445,7 +468,7 @@ export default function FicheLaboPage() {
     patientSource,
     patientId: selectedPatient?.id ?? null,
     customFieldValues,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -512,6 +535,8 @@ export default function FicheLaboPage() {
     setFievre(d.fievre);
     setTraitements(d.traitements);
     setUrgent(d.urgent);
+    setRenouvelable(d.renouvelable ?? false);
+    setDateRenouvelable(d.dateRenouvelable ?? "");
     setSelectedAnticoagulant(d.selectedAnticoagulant);
     setPosologie(d.posologie);
     setInrCible(d.inrCible);
@@ -564,6 +589,8 @@ export default function FicheLaboPage() {
     setFievre(false);
     setTraitements("");
     setUrgent(false);
+    setRenouvelable(false);
+    setDateRenouvelable("");
     setSelectedAnticoagulant("");
     setPosologie("");
     setInrCible("");
@@ -644,6 +671,9 @@ export default function FicheLaboPage() {
           resultats_patSms: resPatSms ? "true" : "",
           resultats_patOppose: resPatOppose ? "true" : "",
           resultats_controle: controleDemande ? "true" : "",
+          // Prescription
+          prescription_renouvelable: renouvelable ? "true" : "",
+          prescription_dateRenouvelable: dateRenouvelable,
           // Pièce justificative
           piece_cni: pieceCni ? "true" : "",
           piece_passeport: piecePasseport ? "true" : "",
@@ -929,13 +959,6 @@ export default function FicheLaboPage() {
             Le patient s'oppose à la communication de résultats à l'IDE
           </label>
         </div>
-        {/* Contrôle demandé */}
-        <div className="pt-1 border-t">
-          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-            <Checkbox checked={controleDemande} onCheckedChange={(v) => setControleDemande(!!v)} data-testid="check-controle" />
-            Contrôle demandé
-          </label>
-        </div>
       </CardContent>
     </Card>
   );
@@ -965,6 +988,42 @@ export default function FicheLaboPage() {
     </Card>
   );
 
+  // --- Prescription card ---
+  const prescriptionCard = (
+    <Card className="glass rounded-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm">Prescription</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={urgent} onCheckedChange={(v) => setUrgent(v === true)} data-testid="field-urgent" />
+            Urgent
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={controleDemande} onCheckedChange={(v) => setControleDemande(!!v)} data-testid="check-controle" />
+            Contrôle demandé
+          </label>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={renouvelable} onCheckedChange={(v) => setRenouvelable(v === true)} data-testid="field-renouvelable" />
+            Renouvelable
+          </label>
+          {renouvelable && (
+            <Input
+              type="date"
+              value={dateRenouvelable}
+              onChange={(e) => setDateRenouvelable(e.target.value)}
+              className="h-8 text-sm w-auto"
+              data-testid="field-date-renouvelable"
+            />
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // --- Prelevement card ---
   const prelevementCard = (
     <Card className="glass rounded-xl">
@@ -983,10 +1042,6 @@ export default function FicheLaboPage() {
           </div>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox checked={urgent} onCheckedChange={(v) => setUrgent(v === true)} data-testid="field-urgent" />
-            Urgent
-          </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={grossesse} onCheckedChange={(v) => setGrossesse(v === true)} />
             Grossesse
@@ -1335,6 +1390,7 @@ export default function FicheLaboPage() {
             {patientIdentityCard}
             {resultatsCard}
             {pieceJustificativeCard}
+            {prescriptionCard}
             {prelevementCard}
             {anticoagulantCard}
             {customFieldsCard}

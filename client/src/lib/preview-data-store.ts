@@ -32,6 +32,9 @@ export interface PreviewFormData {
   fievre: boolean;
   traitements: string;
   urgent: boolean;
+  // Prescription
+  renouvelable: boolean;
+  dateRenouvelable: string;
   // Anticoagulant
   anticoagulant: string;
   posologie: string;
@@ -64,6 +67,8 @@ export function getSamplePreviewData(): PreviewFormData {
     fievre: true,
     traitements: "Doliprane 1g, Kardegic 75mg, Metformine 500mg",
     urgent: true,
+    renouvelable: false,
+    dateRenouvelable: "",
     anticoagulant: "Previscan",
     posologie: "1cp/j",
     inrCible: "2-3",
@@ -142,6 +147,7 @@ export function getPreviewValueForField(
     text_numSecu: data.numSecu,
     text_traitements: data.traitements,
     text_posologie: data.posologie,
+    text_dateRenouvelable: data.dateRenouvelable,
     text_mutuelle: data.mutuelle,
     text_finDeDroit: data.finDeDroit,
   };
@@ -154,6 +160,7 @@ export function getPreviewValueForField(
   if (key.startsWith("check_")) {
     // Special checks based on form data
     if (key === "check_urgent" && data.urgent) return { text: "X", isCheck: true };
+    if (key === "check_renouvelable" && data.renouvelable) return { text: "X", isCheck: true };
     if (key === "check_grossesse" && data.grossesse) return { text: "X", isCheck: true };
     if (key === "check_fievre" && data.fievre) return { text: "X", isCheck: true };
     if (key === "check_sexeH" && data.sexe === "M") return { text: "X", isCheck: true };
