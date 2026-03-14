@@ -718,9 +718,9 @@ export default function CalibrationPage() {
 
                           return (
                             <div key={key} data-testid={`coord-row-${key}`}>
-                              {/* Main row */}
+                              {/* Main row — compact: dot + label + type badge + chevron */}
                               <div
-                                className={`flex items-center gap-1 p-1.5 rounded text-xs cursor-pointer transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted/50"}`}
+                                className={`flex items-center gap-1.5 p-1.5 rounded text-xs cursor-pointer transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted/50"}`}
                                 onClick={() => {
                                   setSelectedKey(key);
                                   toggleExpanded(key);
@@ -754,51 +754,57 @@ export default function CalibrationPage() {
                                   {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : field.type === "combo_date" ? "X+D" : "T"}
                                 </span>
 
-                                {/* Coords */}
-                                <input
-                                  type="number"
-                                  value={Math.round(field.x * 10) / 10}
-                                  onChange={(e) => handleCoordChange(key, "x", e.target.value)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-12 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
-                                  step="0.5"
-                                  data-testid={`coord-x-${key}`}
-                                />
-                                <input
-                                  type="number"
-                                  value={Math.round(field.y * 10) / 10}
-                                  onChange={(e) => handleCoordChange(key, "y", e.target.value)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-12 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
-                                  step="0.5"
-                                  data-testid={`coord-y-${key}`}
-                                />
-
-                                {/* Action buttons */}
-                                <button
-                                  className="p-0.5 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-                                  onClick={(e) => { e.stopPropagation(); startRename(key, field.label); }}
-                                  title="Renommer"
-                                  data-testid={`rename-btn-${key}`}
-                                >
-                                  <Pencil className="size-3" />
-                                </button>
-                                <button
-                                  className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteField(key, field.label); }}
-                                  title="Supprimer"
-                                  data-testid={`delete-btn-${key}`}
-                                >
-                                  <Trash2 className="size-3" />
-                                </button>
+                                <ChevronDown className={`size-3 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                               </div>
 
-                              {/* Expanded detail: fontSize + wordSpacing */}
+                              {/* Expanded detail panel: coords, actions, fontSize, wordSpacing, combo order */}
                               {isExpanded && (
                                 <div
                                   className="ml-4 mr-1 mt-1 mb-2 p-2 rounded-md bg-muted/30 border space-y-2.5"
                                   onClick={(e) => e.stopPropagation()}
                                 >
+                                  {/* Coordinates + action buttons */}
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 flex-1">
+                                      <span className="text-[10px] text-muted-foreground">X</span>
+                                      <input
+                                        type="number"
+                                        value={Math.round(field.x * 10) / 10}
+                                        onChange={(e) => handleCoordChange(key, "x", e.target.value)}
+                                        className="w-16 h-6 text-[11px] text-right bg-muted/50 border rounded px-1 tabular-nums"
+                                        step="0.5"
+                                        data-testid={`coord-x-${key}`}
+                                      />
+                                      <span className="text-[10px] text-muted-foreground">Y</span>
+                                      <input
+                                        type="number"
+                                        value={Math.round(field.y * 10) / 10}
+                                        onChange={(e) => handleCoordChange(key, "y", e.target.value)}
+                                        className="w-16 h-6 text-[11px] text-right bg-muted/50 border rounded px-1 tabular-nums"
+                                        step="0.5"
+                                        data-testid={`coord-y-${key}`}
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                                        onClick={() => startRename(key, field.label)}
+                                        title="Renommer"
+                                        data-testid={`rename-btn-${key}`}
+                                      >
+                                        <Pencil className="size-3.5" />
+                                      </button>
+                                      <button
+                                        className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                        onClick={() => handleDeleteField(key, field.label)}
+                                        title="Supprimer"
+                                        data-testid={`delete-btn-${key}`}
+                                      >
+                                        <Trash2 className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+
                                   {/* Font size */}
                                   <div className="space-y-1">
                                     <div className="flex items-center justify-between">
