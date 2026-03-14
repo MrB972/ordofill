@@ -19,11 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import type { FormTemplate, Patient, DetectedField, SmartSuggestion } from "@shared/schema";
@@ -119,9 +115,8 @@ export default function RemplissagePage() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal" data-testid="split-view">
-          <ResizablePanel defaultSize={60} minSize={30}>
+      <div className="flex-1 min-h-0 flex" data-testid="split-view">
+          <div className="w-[60%] min-w-[300px]">
             <div className="h-full bg-muted/20 flex items-center justify-center relative p-4">
               {selectedTemplate ? (
                 <div
@@ -173,11 +168,11 @@ export default function RemplissagePage() {
                 </div>
               )}
             </div>
-          </ResizablePanel>
+          </div>
 
-          <ResizableHandle withHandle />
+          <div className="w-px bg-border shrink-0" />
 
-          <ResizablePanel defaultSize={40} minSize={25}>
+          <div className="flex-1 min-w-[300px]">
             <ScrollArea className="h-full">
               <div className="p-4 space-y-4" data-testid="form-panel">
                 {!selectedTemplate && (
@@ -252,8 +247,7 @@ export default function RemplissagePage() {
                 })}
               </div>
             </ScrollArea>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          </div>
       </div>
     </div>
   );
