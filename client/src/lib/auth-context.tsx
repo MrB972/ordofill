@@ -43,11 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const login = async (email: string, _password: string) => {
-    await loginMutation.mutateAsync({ email });
+    const result = await loginMutation.mutateAsync({ email });
+    // Ensure the query cache is updated synchronously before returning
+    queryClient.setQueryData(["/api/auth/me"], result);
   };
 
   const register = async (email: string, _password: string, fullName: string) => {
-    await registerMutation.mutateAsync({ email, fullName });
+    const result = await registerMutation.mutateAsync({ email, fullName });
+    queryClient.setQueryData(["/api/auth/me"], result);
   };
 
   const logout = async () => {
