@@ -32,7 +32,7 @@ function FloatingShapes() {
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { login, register } = useAuth();
+  const { user, login, register } = useAuth();
   const { toast } = useToast();
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -42,12 +42,22 @@ export default function AuthPage() {
   const [regName, setRegName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Auto-redirect if already logged in (fixes double-login bug)
+  if (user) {
+    if (!user.onboardingCompleted) {
+      navigate("/onboarding");
+    } else {
+      navigate("/dashboard");
+    }
+    return null;
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await login(loginEmail, loginPassword);
-      navigate("/dashboard");
+      // Navigation is handled by the auto-redirect above once user state updates
     } catch {
       toast({
         title: "Erreur de connexion",
@@ -64,7 +74,7 @@ export default function AuthPage() {
     setLoading(true);
     try {
       await register(regEmail, regPassword, regName);
-      navigate("/onboarding");
+      // Navigation is handled by the auto-redirect above once user state updates
     } catch {
       toast({
         title: "Erreur d'inscription",
