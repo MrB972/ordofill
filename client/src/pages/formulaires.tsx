@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   FileText,
   Upload,
   Search,
   Loader2,
   CheckCircle2,
+  FlaskConical,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +25,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import type { FormTemplate } from "@shared/schema";
 
-const categories = ["Tous", "CPAM", "Mutuelle", "Prescription", "Autre"];
+const categories = ["Tous", "Laboratoire", "CPAM", "Mutuelle", "Prescription", "Autre"];
 
 const staggerContainer = {
   hidden: {},
@@ -36,6 +38,7 @@ const staggerItem = {
 };
 
 export default function FormulairesPage() {
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Tous");
@@ -168,10 +171,22 @@ export default function FormulairesPage() {
             <Card
               className="glass rounded-xl card-hover-lift cursor-pointer group border-white/[0.08]"
               data-testid={`template-card-${t.id}`}
+              onClick={() => {
+                const mappings = t.fieldMappings as Record<string, string> | null;
+                if (mappings?.route) {
+                  navigate(mappings.route);
+                }
+              }}
             >
               <CardContent className="p-4">
-                <div className="template-thumb w-full h-32 rounded-lg bg-muted/50 mb-3 flex items-center justify-center group-hover:bg-muted/70 transition-colors">
-                  <FileText className="size-10 text-muted-foreground/50" />
+                <div className={`template-thumb w-full h-32 rounded-lg mb-3 flex items-center justify-center group-hover:bg-muted/70 transition-colors ${
+                  t.category === "Laboratoire" ? "bg-blue-500/10" : "bg-muted/50"
+                }`}>
+                  {t.category === "Laboratoire" ? (
+                    <FlaskConical className="size-10 text-blue-400/70" />
+                  ) : (
+                    <FileText className="size-10 text-muted-foreground/50" />
+                  )}
                 </div>
                 <p className="font-medium text-sm truncate">{t.name}</p>
                 {t.description && (
@@ -180,7 +195,7 @@ export default function FormulairesPage() {
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-3">
-                  <Badge variant="outline" className={`text-xs ${t.category === "CPAM" ? "badge-cpam" : t.category === "Mutuelle" ? "badge-mutuelle" : t.category === "Prescription" ? "badge-prescription" : "badge-autre"}`}>
+                  <Badge variant="outline" className={`text-xs ${t.category === "CPAM" ? "badge-cpam" : t.category === "Mutuelle" ? "badge-mutuelle" : t.category === "Prescription" ? "badge-prescription" : t.category === "Laboratoire" ? "badge-laboratoire" : "badge-autre"}`}>
                     {t.category}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
