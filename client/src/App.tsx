@@ -16,6 +16,7 @@ import PatientsPage from "@/pages/patients";
 import RemplissagePage from "@/pages/remplissage";
 import HistoriquePage from "@/pages/historique";
 import ParametresPage from "@/pages/parametres";
+import FicheLaboPage from "@/pages/fiche-labo";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
@@ -65,6 +66,9 @@ function AppRouter() {
       </Route>
       <Route path="/parametres">
         <ProtectedRoute component={ParametresPage} />
+      </Route>
+      <Route path="/fiche-labo">
+        <ProtectedRoute component={FicheLaboPage} />
       </Route>
       <Route path="/">
         <Redirect to="/dashboard" />

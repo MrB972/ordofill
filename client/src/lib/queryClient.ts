@@ -65,6 +65,11 @@ async function handleRequest(method: string, url: string, body?: AnyData): Promi
     return await db.updateProfile(profileMatch[1], body);
   }
 
+  // ORDOCAL PATIENTS (cross-app)
+  if (url === "/api/ordocal/patients" && method === "GET") {
+    return await db.getOrdocalPatients();
+  }
+
   // SUGGESTIONS
   if (url.startsWith("/api/suggestions")) {
     const params = new URLSearchParams(url.split("?")[1] ?? "");

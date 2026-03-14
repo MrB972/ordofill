@@ -173,6 +173,17 @@ export async function getSuggestions(templateId: string) {
   return (data ?? []).map(toCamel);
 }
 
+// ---- OrdoCAL Cross-App: Read patients from OrdoCAL's patients table ----
+
+export async function getOrdocalPatients() {
+  const { data, error } = await supabase
+    .from("patients")
+    .select("id, nom, prenom, telephone, date_naissance, adresse, ville, code_postal, numero_securite_sociale, genre, medecin_traitant, notes")
+    .order("nom", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 // ---- Stats ----
 
 export async function getStats() {
