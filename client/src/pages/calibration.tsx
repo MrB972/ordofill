@@ -143,6 +143,8 @@ export default function CalibrationPage() {
       e.stopPropagation();
       setDragging(key);
       setSelectedKey(key);
+      // Auto-open the detail panel for the clicked field
+      setExpandedKey(key);
       const field = calibration[key];
       if (!field || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
@@ -566,10 +568,10 @@ export default function CalibrationPage() {
                             : "none",
                       }}
                     />
-                    {/* Label tooltip (only show when zoomed in enough or selected) */}
+                    {/* Label tooltip (draggable like the dot) */}
                     {(isSelected || zoom >= 1.5) && (
                       <div
-                        className="absolute left-3 top-1/2 -translate-y-1/2 whitespace-nowrap text-[9px] px-1 py-0.5 rounded font-medium pointer-events-none"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 whitespace-nowrap text-[9px] px-1 py-0.5 rounded font-medium cursor-grab active:cursor-grabbing"
                         style={{
                           backgroundColor: color + "DD",
                           color: "#fff",
