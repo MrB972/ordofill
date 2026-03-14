@@ -22,6 +22,8 @@ export interface PreviewFormData {
   numSecu: string;
   medecinTraitant: string;
   prescripteur: string;
+  mutuelle: string;
+  finDeDroit: string;
   // Prelevement
   datePrelevement: string;
   heurePrelevement: string;
@@ -54,6 +56,8 @@ export function getSamplePreviewData(): PreviewFormData {
     numSecu: "2 85 06 972 123 456 78",
     medecinTraitant: "Dr. JEAN-LOUIS",
     prescripteur: "Dr. JEAN-LOUIS",
+    mutuelle: "MGEN",
+    finDeDroit: "31/12/2026",
     datePrelevement: "14/03/2026",
     heurePrelevement: "07:30",
     grossesse: false,
@@ -138,6 +142,8 @@ export function getPreviewValueForField(
     text_numSecu: data.numSecu,
     text_traitements: data.traitements,
     text_posologie: data.posologie,
+    text_mutuelle: data.mutuelle,
+    text_finDeDroit: data.finDeDroit,
   };
 
   if (key in textMap) {

@@ -19,6 +19,23 @@ export interface FicheDraftData {
   numSecu: string;
   medecinTraitant: string;
   prescripteur: string;
+  mutuelle: string;
+  finDeDroit: string;
+  // Résultats
+  resMedFaxer: boolean;
+  resMedTelephoner: boolean;
+  resMedPoster: boolean;
+  resIdeTelephoner: boolean;
+  resIdeSms: boolean;
+  resPatLabo: boolean;
+  resPatInternet: boolean;
+  resPatSms: boolean;
+  resPatOppose: boolean;
+  controleDemande: boolean;
+  // Pièce justificative
+  pieceCni: boolean;
+  piecePasseport: boolean;
+  pieceTitre: boolean;
   // Prelevement
   datePrelevement: string;
   heurePrelevement: string;

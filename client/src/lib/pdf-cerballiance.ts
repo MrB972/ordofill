@@ -18,6 +18,8 @@ interface CerballiancePDFData {
   numSecu: string;
   medecinTraitant: string;
   prescripteur: string;
+  mutuelle: string;
+  finDeDroit: string;
   // Prelevement
   datePrelevement: string;
   heurePrelevement: string;
@@ -300,6 +302,49 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
       if (entry) {
         check(entry.x, entry.y, key);
       }
+    }
+  }
+
+  // ============================================================
+  // SECTION: RÉSULTATS + PIÈCE JUSTIFICATIVE + MUTUELLE + FIN DE DROIT
+  // ============================================================
+  {
+    // Résultats checkboxes — these map to calibration keys
+    const resultatsChecks: [boolean, string][] = [
+      [!!data.customFields?.["resultats_medFaxer"], "check_\u00e0_Faxer"],
+      [!!data.customFields?.["resultats_medTelephoner"], "check_\u00e0_t\u00e9l\u00e9phoner"],
+      [!!data.customFields?.["resultats_medPoster"], "check_\u00e0_poster"],
+      [!!data.customFields?.["resultats_ideTelephoner"], "check_\u00e0_t\u00e9l\u00e9phoner_1"],
+      [!!data.customFields?.["resultats_ideSms"], "check_SMS_avec_consentement_patient"],
+      [!!data.customFields?.["resultats_patLabo"], "check_au_laboratoire"],
+      [!!data.customFields?.["resultats_patInternet"], "check_Internet"],
+      [!!data.customFields?.["resultats_patSms"], "check_SMS"],
+      [!!data.customFields?.["resultats_patOppose"], "check_Le_patient_soppose_\u00e0_la_communication_de_r\u00e9sultats_\u00e0_lIDE"],
+      [!!data.customFields?.["resultats_controle"], "check_Contr\u00f4le_demand\u00e9"],
+      [!!data.customFields?.["piece_cni"], "check_CNI"],
+      [!!data.customFields?.["piece_passeport"], "check_Passeport"],
+      [!!data.customFields?.["piece_titre"], "check_Titre_ou_carte_de_s\u00e9jour"],
+    ];
+    for (const [checked, calKey] of resultatsChecks) {
+      if (checked) {
+        const entry = cal[calKey];
+        if (entry) check(entry.x, entry.y, calKey);
+      }
+    }
+    // Mutuelle text
+    if (data.mutuelle) {
+      const [x, y] = coord(cal, "text_mutuelle", 380, 225);
+      text(data.mutuelle, "text_mutuelle", x, y);
+    }
+    // Fin de droit
+    if (data.finDeDroit) {
+      let formatted = data.finDeDroit;
+      if (formatted.includes("-")) {
+        const parts = formatted.split("-");
+        if (parts.length === 3) formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      const [x, y] = coord(cal, "text_finDeDroit", 480, 225);
+      text(formatted, "text_finDeDroit", x, y);
     }
   }
 

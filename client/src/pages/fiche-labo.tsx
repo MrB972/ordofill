@@ -193,6 +193,25 @@ export default function FicheLaboPage() {
   const [numSecu, setNumSecu] = useState("");
   const [medecinTraitant, setMedecinTraitant] = useState("");
   const [prescripteur, setPrescripteur] = useState("");
+  const [mutuelle, setMutuelle] = useState("");
+  const [finDeDroit, setFinDeDroit] = useState("");
+
+  // Résultats
+  const [resMedFaxer, setResMedFaxer] = useState(false);
+  const [resMedTelephoner, setResMedTelephoner] = useState(false);
+  const [resMedPoster, setResMedPoster] = useState(false);
+  const [resIdeTelephoner, setResIdeTelephoner] = useState(false);
+  const [resIdeSms, setResIdeSms] = useState(false);
+  const [resPatLabo, setResPatLabo] = useState(false);
+  const [resPatInternet, setResPatInternet] = useState(false);
+  const [resPatSms, setResPatSms] = useState(false);
+  const [resPatOppose, setResPatOppose] = useState(false);
+  const [controleDemande, setControleDemande] = useState(false);
+
+  // Pièce justificative
+  const [pieceCni, setPieceCni] = useState(false);
+  const [piecePasseport, setPiecePasseport] = useState(false);
+  const [pieceTitre, setPieceTitre] = useState(false);
 
   // Prelevement
   const [datePrelevement, setDatePrelevement] = useState(
@@ -264,6 +283,21 @@ export default function FicheLaboPage() {
     if (selectedAnticoagulant) checkSet.add(`check_${selectedAnticoagulant}`);
     if (inrCible === "2-3") checkSet.add("check_inr23");
     if (inrCible === "3-4.5" || inrCible === "3-4,5") checkSet.add("check_inr345");
+    // Résultats
+    if (resMedFaxer) checkSet.add("check_à_Faxer");
+    if (resMedTelephoner) checkSet.add("check_à_téléphoner");
+    if (resMedPoster) checkSet.add("check_à_poster");
+    if (resIdeTelephoner) checkSet.add("check_à_téléphoner_1");
+    if (resIdeSms) checkSet.add("check_SMS_avec_consentement_patient");
+    if (resPatLabo) checkSet.add("check_au_laboratoire");
+    if (resPatInternet) checkSet.add("check_Internet");
+    if (resPatSms) checkSet.add("check_SMS");
+    if (resPatOppose) checkSet.add("check_Le_patient_soppose_à_la_communication_de_résultats_à_lIDE");
+    if (controleDemande) checkSet.add("check_Contrôle_demandé");
+    // Pièce justificative
+    if (pieceCni) checkSet.add("check_CNI");
+    if (piecePasseport) checkSet.add("check_Passeport");
+    if (pieceTitre) checkSet.add("check_Titre_ou_carte_de_séjour");
     setPreviewData({
       ideName: user?.fullName ?? "",
       ideCabinet: user?.cabinetName ?? "",
@@ -285,12 +319,18 @@ export default function FicheLaboPage() {
       anticoagulant: selectedAnticoagulant,
       posologie,
       inrCible,
+      mutuelle,
+      finDeDroit: (() => { const fd = finDeDroit; if (fd && fd.includes("-")) { const p = fd.split("-"); if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`; } return fd; })(),
       selectedChecks: checkSet,
       customFieldValues,
     });
   }, [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu,
-    medecinTraitant, prescripteur, datePrelevement, heurePrelevement, grossesse, fievre,
+    medecinTraitant, prescripteur, mutuelle, finDeDroit,
+    datePrelevement, heurePrelevement, grossesse, fievre,
     traitements, urgent, selectedAnticoagulant, posologie, inrCible,
+    resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms,
+    resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande,
+    pieceCni, piecePasseport, pieceTitre,
     selectedAnalyses, user, customFieldValues]);
 
   // Fetch OrdoFill patients
@@ -385,6 +425,13 @@ export default function FicheLaboPage() {
     numSecu,
     medecinTraitant,
     prescripteur,
+    mutuelle,
+    finDeDroit,
+    resMedFaxer, resMedTelephoner, resMedPoster,
+    resIdeTelephoner, resIdeSms,
+    resPatLabo, resPatInternet, resPatSms, resPatOppose,
+    controleDemande,
+    pieceCni, piecePasseport, pieceTitre,
     datePrelevement,
     heurePrelevement,
     grossesse,
@@ -398,7 +445,7 @@ export default function FicheLaboPage() {
     patientSource,
     patientId: selectedPatient?.id ?? null,
     customFieldValues,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -444,6 +491,21 @@ export default function FicheLaboPage() {
     setNumSecu(d.numSecu);
     setMedecinTraitant(d.medecinTraitant);
     setPrescripteur(d.prescripteur ?? d.medecinTraitant);
+    setMutuelle(d.mutuelle ?? "");
+    setFinDeDroit(d.finDeDroit ?? "");
+    setResMedFaxer(d.resMedFaxer ?? false);
+    setResMedTelephoner(d.resMedTelephoner ?? false);
+    setResMedPoster(d.resMedPoster ?? false);
+    setResIdeTelephoner(d.resIdeTelephoner ?? false);
+    setResIdeSms(d.resIdeSms ?? false);
+    setResPatLabo(d.resPatLabo ?? false);
+    setResPatInternet(d.resPatInternet ?? false);
+    setResPatSms(d.resPatSms ?? false);
+    setResPatOppose(d.resPatOppose ?? false);
+    setControleDemande(d.controleDemande ?? false);
+    setPieceCni(d.pieceCni ?? false);
+    setPiecePasseport(d.piecePasseport ?? false);
+    setPieceTitre(d.pieceTitre ?? false);
     setDatePrelevement(d.datePrelevement);
     setHeurePrelevement(d.heurePrelevement);
     setGrossesse(d.grossesse);
@@ -481,6 +543,21 @@ export default function FicheLaboPage() {
     setNumSecu("");
     setMedecinTraitant("");
     setPrescripteur("");
+    setMutuelle("");
+    setFinDeDroit("");
+    setResMedFaxer(false);
+    setResMedTelephoner(false);
+    setResMedPoster(false);
+    setResIdeTelephoner(false);
+    setResIdeSms(false);
+    setResPatLabo(false);
+    setResPatInternet(false);
+    setResPatSms(false);
+    setResPatOppose(false);
+    setControleDemande(false);
+    setPieceCni(false);
+    setPiecePasseport(false);
+    setPieceTitre(false);
     setDatePrelevement(new Date().toISOString().slice(0, 10));
     setHeurePrelevement(new Date().toTimeString().slice(0, 5));
     setGrossesse(false);
@@ -542,6 +619,8 @@ export default function FicheLaboPage() {
         numSecu,
         medecinTraitant,
         prescripteur,
+        mutuelle,
+        finDeDroit,
         datePrelevement,
         heurePrelevement,
         grossesse,
@@ -552,7 +631,24 @@ export default function FicheLaboPage() {
         posologie,
         inrCible,
         analysesBySection,
-        customFields: customFieldValues,
+        customFields: {
+          ...customFieldValues,
+          // Native résultats checks
+          resultats_medFaxer: resMedFaxer ? "true" : "",
+          resultats_medTelephoner: resMedTelephoner ? "true" : "",
+          resultats_medPoster: resMedPoster ? "true" : "",
+          resultats_ideTelephoner: resIdeTelephoner ? "true" : "",
+          resultats_ideSms: resIdeSms ? "true" : "",
+          resultats_patLabo: resPatLabo ? "true" : "",
+          resultats_patInternet: resPatInternet ? "true" : "",
+          resultats_patSms: resPatSms ? "true" : "",
+          resultats_patOppose: resPatOppose ? "true" : "",
+          resultats_controle: controleDemande ? "true" : "",
+          // Pièce justificative
+          piece_cni: pieceCni ? "true" : "",
+          piece_passeport: piecePasseport ? "true" : "",
+          piece_titre: pieceTitre ? "true" : "",
+        },
       });
 
       toast({
@@ -757,6 +853,113 @@ export default function FicheLaboPage() {
               </Button>
             </div>
           </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Mutuelle</Label>
+            <Input value={mutuelle} onChange={(e) => setMutuelle(e.target.value)} placeholder="Nom de la mutuelle" className="h-8 text-sm" data-testid="field-mutuelle" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Fin de droit</Label>
+            <Input type="date" value={finDeDroit} onChange={(e) => setFinDeDroit(e.target.value)} className="h-8 text-sm" data-testid="field-fin-droit" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // --- Résultats card ---
+  const resultatsCard = (
+    <Card className="glass rounded-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm">Résultats</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Médecin */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-muted-foreground">Médecin</Label>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resMedFaxer} onCheckedChange={(v) => setResMedFaxer(!!v)} data-testid="check-med-faxer" />
+              à Faxer
+            </label>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resMedTelephoner} onCheckedChange={(v) => setResMedTelephoner(!!v)} data-testid="check-med-tel" />
+              à téléphoner
+            </label>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resMedPoster} onCheckedChange={(v) => setResMedPoster(!!v)} data-testid="check-med-poster" />
+              à poster
+            </label>
+          </div>
+        </div>
+        {/* IDE */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-muted-foreground">IDE</Label>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resIdeTelephoner} onCheckedChange={(v) => setResIdeTelephoner(!!v)} data-testid="check-ide-tel" />
+              à téléphoner
+            </label>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resIdeSms} onCheckedChange={(v) => setResIdeSms(!!v)} data-testid="check-ide-sms" />
+              SMS (avec consentement patient)
+            </label>
+          </div>
+        </div>
+        {/* Patient */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-muted-foreground">Patient</Label>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resPatLabo} onCheckedChange={(v) => setResPatLabo(!!v)} data-testid="check-pat-labo" />
+              au laboratoire
+            </label>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resPatInternet} onCheckedChange={(v) => setResPatInternet(!!v)} data-testid="check-pat-internet" />
+              Internet
+            </label>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={resPatSms} onCheckedChange={(v) => setResPatSms(!!v)} data-testid="check-pat-sms" />
+              SMS
+            </label>
+          </div>
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <Checkbox checked={resPatOppose} onCheckedChange={(v) => setResPatOppose(!!v)} data-testid="check-pat-oppose" />
+            Le patient s'oppose à la communication de résultats à l'IDE
+          </label>
+        </div>
+        {/* Contrôle demandé */}
+        <div className="pt-1 border-t">
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <Checkbox checked={controleDemande} onCheckedChange={(v) => setControleDemande(!!v)} data-testid="check-controle" />
+            Contrôle demandé
+          </label>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // --- Pièce justificative card ---
+  const pieceJustificativeCard = (
+    <Card className="glass rounded-xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm">Pièce justificative</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <Checkbox checked={pieceCni} onCheckedChange={(v) => setPieceCni(!!v)} data-testid="check-cni" />
+            CNI
+          </label>
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <Checkbox checked={piecePasseport} onCheckedChange={(v) => setPiecePasseport(!!v)} data-testid="check-passeport" />
+            Passeport
+          </label>
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <Checkbox checked={pieceTitre} onCheckedChange={(v) => setPieceTitre(!!v)} data-testid="check-titre" />
+            Titre ou carte de séjour
+          </label>
         </div>
       </CardContent>
     </Card>
@@ -1130,6 +1333,8 @@ export default function FicheLaboPage() {
             {patientSelectorCard}
             {ideCard}
             {patientIdentityCard}
+            {resultatsCard}
+            {pieceJustificativeCard}
             {prelevementCard}
             {anticoagulantCard}
             {customFieldsCard}

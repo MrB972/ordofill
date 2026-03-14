@@ -70,6 +70,31 @@ export function getDefaultCalibration(): CalibrationMap {
 
     // ============ CHECKBOXES ============
     "check_urgent": c(492, 102, "Urgent", "header"),
+
+    // Résultats: Médecin
+    "check_\u00e0_Faxer": c(109, 125, "\u00e0 Faxer", "header"),
+    "check_\u00e0_t\u00e9l\u00e9phoner": c(152, 125, "\u00e0 t\u00e9l\u00e9phoner (M\u00e9d.)", "header"),
+    "check_\u00e0_poster": c(210, 125, "\u00e0 poster", "header"),
+    // R\u00e9sultats: IDE
+    "check_\u00e0_t\u00e9l\u00e9phoner_1": c(33, 133, "\u00e0 t\u00e9l\u00e9phoner (IDE)", "header"),
+    "check_SMS_avec_consentement_patient": c(93, 133, "SMS (avec consentement patient)", "header"),
+    // R\u00e9sultats: Patient
+    "check_Patient": c(303, 122, "Patient", "header"),
+    "check_au_laboratoire": c(367, 122, "au laboratoire", "header"),
+    "check_Internet": c(412, 125, "Internet", "header"),
+    "check_SMS": c(455, 118, "SMS", "header"),
+    "check_Le_patient_soppose_\u00e0_la_communication_de_r\u00e9sultats_\u00e0_lIDE": c(233, 133, "Le patient s'oppose \u00e0 la communication de r\u00e9sultats \u00e0 l'IDE", "header"),
+    "check_Contr\u00f4le_demand\u00e9": c(256, 105, "Contr\u00f4le demand\u00e9", "header"),
+
+    // Pi\u00e8ce justificative
+    "check_CNI": c(390, 145, "CNI", "patient"),
+    "check_Passeport": c(430, 145, "Passeport", "patient"),
+    "check_Titre_ou_carte_de_s\u00e9jour": c(490, 145, "Titre ou carte de s\u00e9jour", "patient"),
+
+    // Patient - Mutuelle & Fin de droit
+    "text_mutuelle": t(380, 225, "Mutuelle", "patient"),
+    "text_finDeDroit": t(480, 225, "Fin de droit", "patient"),
+
     "check_sexeH": c(505, 170, "Sexe H", "patient"),
     "check_sexeF": c(528, 170, "Sexe F", "patient"),
     "check_grossesse": c(250, 263, "Grossesse", "clinique"),
