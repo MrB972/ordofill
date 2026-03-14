@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   FileText,
   Download,
   ChevronDown,
   Sparkles,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,7 @@ import type { FormTemplate, Patient, DetectedField, SmartSuggestion } from "@sha
 
 export default function RemplissagePage() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -74,14 +77,27 @@ export default function RemplissagePage() {
       <div className="p-4 border-b glass-strong flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2 min-w-[200px]">
           <Label className="text-sm whitespace-nowrap">Template:</Label>
-          <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+          <Select
+            value={selectedTemplateId}
+            onValueChange={(val) => {
+              const tpl = templates.find((t) => t.id === val);
+              if (tpl?.category === "Laboratoire") {
+                navigate("/fiche-labo");
+                return;
+              }
+              setSelectedTemplateId(val);
+            }}
+          >
             <SelectTrigger data-testid="template-selector" className="w-[220px]">
               <SelectValue placeholder="Choisir un template" />
             </SelectTrigger>
             <SelectContent>
               {templates.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
-                  {t.name}
+                  <span className="flex items-center gap-2">
+                    {t.category === "Laboratoire" && <FlaskConical className="size-3 text-blue-400" />}
+                    {t.name}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

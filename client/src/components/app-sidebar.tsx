@@ -6,7 +6,6 @@ import {
   PenTool,
   Clock,
   Settings,
-  FlaskConical,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,7 +27,6 @@ const navItems = [
   { href: "/formulaires", label: "Formulaires", icon: FileText },
   { href: "/patients", label: "Patients", icon: Users },
   { href: "/remplissage", label: "Nouveau Remplissage", icon: PenTool },
-  { href: "/fiche-labo", label: "Fiche Labo", icon: FlaskConical },
   { href: "/historique", label: "Historique", icon: Clock },
   { href: "/parametres", label: "Parametres", icon: Settings },
 ];
@@ -57,7 +55,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => {
                 const isActive = location === item.href;
-                const isHighlighted = item.href === "/remplissage" || item.href === "/fiche-labo";
+                const isHighlighted = item.href === "/remplissage";
                 return (
                   <SidebarMenuItem key={item.href}>
                     {isHighlighted ? (

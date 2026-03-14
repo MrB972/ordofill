@@ -9,6 +9,10 @@ import {
   MapPin,
   Mail,
   Trash2,
+  RefreshCw,
+  CalendarSync,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,7 +40,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Patient } from "@shared/schema";
+
+interface OrdocalPatient {
+  id: string;
+  nom: string;
+  prenom: string;
+  telephone: string | null;
+  date_naissance: string | null;
+  adresse: string | null;
+  ville: string | null;
+  code_postal: string | null;
+  numero_securite_sociale: string | null;
+  genre: string | null;
+  medecin_traitant: string | null;
+  notes: string | null;
+}
 
 const staggerContainer = {
   hidden: {},
@@ -50,10 +70,12 @@ const staggerItem = {
 
 export default function PatientsPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
   const [detailPatient, setDetailPatient] = useState<Patient | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -190,6 +212,66 @@ export default function PatientsPage() {
     <div className="p-6 space-y-6" data-testid="patients-page">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">Patients</h1>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              setSyncing(true);
+              try {
+                const res = await apiRequest("GET", "/api/ordocal/patients");
+                const ordocalPatients: OrdocalPatient[] = await res.json();
+                let imported = 0;
+                for (const op of ordocalPatients) {
+                  const exists = patients.some(
+                    (p) =>
+                      p.firstName.toLowerCase() === (op.prenom ?? "").toLowerCase() &&
+                      p.lastName.toLowerCase() === (op.nom ?? "").toLowerCase()
+                  );
+                  if (!exists) {
+                    await createMutation.mutateAsync({
+                      firstName: op.prenom ?? "",
+                      lastName: op.nom ?? "",
+                      dateOfBirth: op.date_naissance ?? "",
+                      gender: op.genre ?? "",
+                      phone: op.telephone ?? "",
+                      email: "",
+                      address: op.adresse ?? "",
+                      city: op.ville ?? "",
+                      postalCode: op.code_postal ?? "",
+                      numeroSecuriteSociale: op.numero_securite_sociale ?? "",
+                      medecinTraitant: op.medecin_traitant ?? "",
+                      notes: op.notes ?? "",
+                    });
+                    imported++;
+                  }
+                }
+                toast({
+                  title: "Sync OrdoCAL terminee",
+                  description: imported > 0
+                    ? `${imported} patient(s) importe(s) depuis OrdoCAL`
+                    : "Tous les patients sont deja synchronises",
+                });
+              } catch (err) {
+                toast({
+                  title: "Erreur de synchronisation",
+                  description: "Impossible de recuperer les patients OrdoCAL",
+                  variant: "destructive",
+                });
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+            data-testid="sync-ordocal-btn"
+          >
+            {syncing ? (
+              <Loader2 className="size-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="size-4 mr-2" />
+            )}
+            {syncing ? "Synchronisation..." : "Sync OrdoCAL"}
+          </Button>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openAdd} data-testid="add-patient-btn">

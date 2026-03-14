@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -9,6 +9,7 @@ import {
   Loader2,
   CheckCircle2,
   FlaskConical,
+  FileImage,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ export default function FormulairesPage() {
   const [category, setCategory] = useState("Tous");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadStep, setUploadStep] = useState<"idle" | "uploading" | "detecting" | "done">("idle");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: templates = [] } = useQuery<FormTemplate[]>({
     queryKey: ["/api/templates"],
@@ -71,19 +74,22 @@ export default function FormulairesPage() {
     return matchCategory && matchSearch;
   });
 
-  const simulateUpload = async () => {
+  const handleFileSelected = async (file: File) => {
+    setSelectedFile(file);
     setUploadStep("uploading");
     await new Promise((r) => setTimeout(r, 1200));
     setUploadStep("detecting");
     await new Promise((r) => setTimeout(r, 1500));
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "Nouveau formulaire";
     await createMutation.mutateAsync({
-      name: "Nouveau formulaire",
+      name: baseName,
       category: "Autre",
     });
     setUploadStep("done");
     setTimeout(() => {
       setUploadOpen(false);
       setUploadStep("idle");
+      setSelectedFile(null);
     }, 1000);
   };
 
@@ -103,15 +109,30 @@ export default function FormulairesPage() {
               <DialogTitle>Uploader un formulaire</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileSelected(file);
+                  e.target.value = "";
+                }}
+                data-testid="upload-file-input"
+              />
               {uploadStep === "idle" && (
                 <div
                   className="border-2 border-dashed border-muted rounded-xl p-12 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={simulateUpload}
+                  onClick={() => fileInputRef.current?.click()}
                   data-testid="upload-dropzone"
                 >
-                  <Upload className="size-8 text-muted-foreground mx-auto mb-3" />
+                  <FileImage className="size-8 text-muted-foreground mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    Glissez un PDF ici ou cliquez pour uploader
+                    Cliquez pour selectionner un PDF ou une image
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Depuis votre galerie, appareil photo ou fichiers
                   </p>
                 </div>
               )}
@@ -119,6 +140,9 @@ export default function FormulairesPage() {
                 <div className="flex flex-col items-center gap-3 py-8">
                   <Loader2 className="size-8 animate-spin text-primary" />
                   <p className="text-sm">Upload en cours...</p>
+                  {selectedFile && (
+                    <p className="text-xs text-muted-foreground">{selectedFile.name}</p>
+                  )}
                 </div>
               )}
               {uploadStep === "detecting" && (
