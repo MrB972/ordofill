@@ -161,13 +161,19 @@ export default function CalibrationPage() {
           return prev;
         });
       }
-      // Auto-scroll to the row in the side panel after React renders
-      // Use setTimeout to wait for React to uncollapse the section and render
+      // Auto-scroll ONLY the side panel to the row (not the PDF area)
       setTimeout(() => {
-        const row = document.querySelector(`[data-testid="coord-row-${key}"]`);
-        if (row) {
-          row.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+        const panel = sidePanelRef.current;
+        if (!panel) return;
+        // The Radix ScrollArea viewport is the actual scrollable element
+        const viewport = panel.querySelector("[data-radix-scroll-area-viewport]") as HTMLElement | null;
+        const row = panel.querySelector(`[data-testid="coord-row-${key}"]`) as HTMLElement | null;
+        if (!viewport || !row) return;
+        const vpRect = viewport.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        // Scroll so the row is vertically centered in the viewport
+        const offset = rowRect.top - vpRect.top + viewport.scrollTop - vpRect.height / 2 + rowRect.height / 2;
+        viewport.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
       }, 80);
       const field = calibration[key];
       if (!field || !containerRef.current) return;
@@ -631,7 +637,7 @@ export default function CalibrationPage() {
         </div>
 
         {/* Side panel: coordinates + controls */}
-        <div className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[340px] sm:min-w-[300px] border-l bg-background`}>
+        <div ref={sidePanelRef} className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[340px] sm:min-w-[300px] border-l bg-background`}>
           <ScrollArea className="h-full">
             <div className="p-3 space-y-2">
               {/* Section filter chips */}
