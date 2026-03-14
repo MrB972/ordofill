@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -50,7 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getQueryFn } from "@/lib/queryClient";
 import { generateCerballiancePDF } from "@/lib/pdf-cerballiance";
 import { setPreviewData, type PreviewFormData } from "@/lib/preview-data-store";
-import { useCustomFields } from "@/lib/calibration-store";
+import { useCustomFields, useCalibration, type CalibrationMap } from "@/lib/calibration-store";
 import { Link } from "wouter";
 import {
   getDrafts,
@@ -99,57 +99,43 @@ function formatName(lastName: string, firstName: string) {
   return `${(lastName ?? "").toUpperCase()} ${(firstName ?? "").charAt(0).toUpperCase() + (firstName ?? "").slice(1).toLowerCase()}`;
 }
 
-// Lab form sections
-const TUBE_BLEU_ANALYSES = [
-  "INR", "TCA", "Fibrine", "TP", "AT3",
-  "Plaquettes sur tube citrate", "Ddimeres",
+// Static section display config — analyses are derived dynamically from calibration
+interface TubeSectionConfig {
+  label: string;
+  calibrationSectionId: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+  icon: string;
+}
+
+const TUBE_SECTION_CONFIGS: TubeSectionConfig[] = [
+  { label: "Tube bleu (citrate)", calibrationSectionId: "tube_bleu", color: "#3B82F6", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", textColor: "text-blue-400", icon: "\u{1F535}" },
+  { label: "Tube jaune 5mL", calibrationSectionId: "tube_jaune", color: "#EAB308", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", textColor: "text-yellow-400", icon: "\u{1F7E1}" },
+  { label: "Tube jaune 3.5mL (rhumato)", calibrationSectionId: "rhumato", color: "#F59E0B", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30", textColor: "text-amber-400", icon: "\u{1F7E0}" },
+  { label: "S\u00e9rologies", calibrationSectionId: "serologies", color: "#A855F7", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", textColor: "text-purple-400", icon: "\u{1F7E3}" },
+  { label: "Analyses cardiaques", calibrationSectionId: "cardiaques", color: "#EF4444", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", icon: "\u2764\ufe0f" },
+  { label: "Tube violet EDTA", calibrationSectionId: "tube_violet", color: "#8B5CF6", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/30", textColor: "text-violet-400", icon: "\u{1F7E3}" },
+  { label: "Tube gris", calibrationSectionId: "tube_gris", color: "#6B7280", bgColor: "bg-gray-500/10", borderColor: "border-gray-500/30", textColor: "text-gray-400", icon: "\u26aa" },
+  { label: "Tube vert", calibrationSectionId: "tube_vert", color: "#22C55E", bgColor: "bg-green-500/10", borderColor: "border-green-500/30", textColor: "text-green-400", icon: "\u{1F7E2}" },
+  { label: "Tube rouge (Chlordecone)", calibrationSectionId: "chlordecone", color: "#DC2626", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", icon: "\u{1F534}" },
 ];
 
-const TUBE_JAUNE_ANALYSES = [
-  "ACE", "Acide urique", "AFP", "Ag HBS", "ALAT / ASAT", "Albumine",
-  "Apo A / Apo B", "B2 microglobuline", "Bicarbonates", "Bilan hepatique",
-  "Bilan lipidique", "Bilirubine", "CA 125", "CA 153.3", "CA 19.9",
-  "Calcium / Calcium corrige", "CMV", "Cholesterol / triglycerides",
-  "Coefficient de saturation", "Cortisol", "CPK", "Creatinine",
-  "CRP / CRP us", "DHEAS", "DFG", "Estradiol", "Fer serique",
-  "Ferritine", "Folates seriques", "Fructosamine", "GGT",
-  "Hepatite A / B / C", "HIV", "HTLV", "IgA / IgG / IgM / IgE totales",
-  "Ionogramme complet", "LDH", "Lipase", "Magnesium", "Na / K / Cl",
-  "PAL", "Phosphore", "Prealbumine", "Progesterone", "Prolactine",
-  "Protides", "PSA / PSA LIBRE", "PTH", "Rubeole", "Syphilis",
-  "T3L / T4L", "Testosterone", "Toxoplasmose", "TSH", "Uree",
-  "Vit B12", "Vit D",
-];
-
-const TUBE_JAUNE_PETIT_ANALYSES = [
-  "ENA / AAN / ACADN", "Facteurs rhumatoides", "Latex Waaler-Rose",
-];
-
-const TUBE_VIOLET_ANALYSES = [
-  "NFS", "VS", "Reticulocytes", "BNP", "HbA1C",
-  "Plaquettes", "Electrophorese HB", "RAI", "Groupe sanguin",
-];
-
-const TUBE_GRIS_ANALYSES = ["Glycemie a Jeun", "GPP"];
-
-const TUBE_VERT_ANALYSES = ["Bicarbonates / Reserve alcaline"];
-
-const TUBE_ROUGE_ANALYSES = ["Chlordecone"];
-
-const SEROLOGIES = ["Serologie H.Pylori", "Serologie C.trachomatis IgG", "Procalcitonie"];
-
-const ANALYSES_CARDIAQUES = [
-  "NTproBNP", "Troponine",
-  "Electrophorese des protides / Immunotypage",
-];
-
-const ANTICOAGULANTS = [
-  "Sintrom", "Previscan", "Coumadine", "Fraxi", "Lovenox",
-  "Innohep", "Calciparine", "Orgaran", "Rivaroxaban", "Apixaban", "Dabigatran",
-];
+/**
+ * Build analyses list for a section from calibration data.
+ * Only includes "check_" fields from the given section.
+ * The analysis name = the key with "check_" prefix stripped.
+ */
+function getAnalysesFromCalibration(cal: CalibrationMap, sectionId: string): string[] {
+  return Object.entries(cal)
+    .filter(([key, field]) => field.section === sectionId && field.type === "check" && key.startsWith("check_"))
+    .map(([key]) => key.replace(/^check_/, ""));
+}
 
 interface TubeSection {
   label: string;
+  calibrationSectionId: string;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -158,17 +144,18 @@ interface TubeSection {
   icon: string;
 }
 
-const TUBE_SECTIONS: TubeSection[] = [
-  { label: "Tube bleu (citrate)", color: "#3B82F6", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", textColor: "text-blue-400", analyses: TUBE_BLEU_ANALYSES, icon: "\u{1F535}" },
-  { label: "Tube jaune 5mL", color: "#EAB308", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", textColor: "text-yellow-400", analyses: TUBE_JAUNE_ANALYSES, icon: "\u{1F7E1}" },
-  { label: "Tube jaune 3.5mL (rhumato)", color: "#F59E0B", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30", textColor: "text-amber-400", analyses: TUBE_JAUNE_PETIT_ANALYSES, icon: "\u{1F7E0}" },
-  { label: "S\u00e9rologies", color: "#A855F7", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", textColor: "text-purple-400", analyses: SEROLOGIES, icon: "\u{1F7E3}" },
-  { label: "Analyses cardiaques", color: "#EF4444", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: ANALYSES_CARDIAQUES, icon: "\u2764\ufe0f" },
-  { label: "Tube violet EDTA", color: "#8B5CF6", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/30", textColor: "text-violet-400", analyses: TUBE_VIOLET_ANALYSES, icon: "\u{1F7E3}" },
-  { label: "Tube gris", color: "#6B7280", bgColor: "bg-gray-500/10", borderColor: "border-gray-500/30", textColor: "text-gray-400", analyses: TUBE_GRIS_ANALYSES, icon: "\u26aa" },
-  { label: "Tube vert", color: "#22C55E", bgColor: "bg-green-500/10", borderColor: "border-green-500/30", textColor: "text-green-400", analyses: TUBE_VERT_ANALYSES, icon: "\u{1F7E2}" },
-  { label: "Tube rouge (Chlordecone)", color: "#DC2626", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", textColor: "text-red-400", analyses: TUBE_ROUGE_ANALYSES, icon: "\u{1F534}" },
-];
+/** Anticoagulant names are derived from the 'anticoagulant' calibration section,
+ *  excluding special keys (inr23, inr345). */
+function getAnticoagulantsFromCalibration(cal: CalibrationMap): string[] {
+  return Object.entries(cal)
+    .filter(([key, field]) =>
+      field.section === "anticoagulant" &&
+      field.type === "check" &&
+      key.startsWith("check_") &&
+      !key.startsWith("check_inr")
+    )
+    .map(([key]) => key.replace(/^check_/, ""));
+}
 
 export default function FicheLaboPage() {
   const { user } = useAuth();
@@ -222,9 +209,24 @@ export default function FicheLaboPage() {
   // Collapsed sections
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
 
+  // Calibration data (reactive)
+  const calibration = useCalibration();
+
   // Custom fields from calibration
   const customFields = useCustomFields();
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  // Build TUBE_SECTIONS dynamically from calibration
+  const TUBE_SECTIONS: TubeSection[] = useMemo(() =>
+    TUBE_SECTION_CONFIGS.map((cfg) => ({
+      ...cfg,
+      analyses: getAnalysesFromCalibration(calibration, cfg.calibrationSectionId),
+    })).filter((s) => s.analyses.length > 0),
+    [calibration]
+  );
+
+  // Build anticoagulants list dynamically from calibration
+  const ANTICOAGULANTS = useMemo(() => getAnticoagulantsFromCalibration(calibration), [calibration]);
 
   // Sync form data to preview store (for calibration preview mode)
   useEffect(() => {
@@ -802,7 +804,8 @@ export default function FicheLaboPage() {
   // --- Custom fields card ---
   const customTextFields = Object.entries(customFields).filter(([, f]) => f.type === "text");
   const customCheckFields = Object.entries(customFields).filter(([, f]) => f.type === "check");
-  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0;
+  const customComboFields = Object.entries(customFields).filter(([, f]) => f.type === "combo");
+  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0 || customComboFields.length > 0;
 
   const customFieldsCard = hasCustomFields ? (
     <Card className="glass rounded-xl border-purple-500/20">
@@ -854,6 +857,41 @@ export default function FicheLaboPage() {
                 </label>
               ))}
             </div>
+          </div>
+        )}
+        {customComboFields.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CheckSquare className="size-3" />
+              <Type className="size-3" />
+              Combo (X + Texte)
+            </div>
+            {customComboFields.map(([key, field]) => {
+              const order = field.comboOrder ?? "check_text";
+              const isChecked = customFieldValues[`${key}:checked`] === "true";
+              return (
+                <div key={key} className="space-y-1">
+                  <Label className="text-xs">{field.label}</Label>
+                  <div className={`flex items-center gap-2 ${order === "text_check" ? "flex-row-reverse justify-end" : ""}`}>
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(v) => setCustomFieldValues((prev) => ({
+                        ...prev,
+                        [`${key}:checked`]: v === true ? "true" : "",
+                      }))}
+                      data-testid={`combo-check-${key}`}
+                    />
+                    <Input
+                      value={customFieldValues[key] ?? ""}
+                      onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                      placeholder={field.label}
+                      className="h-8 text-sm flex-1"
+                      data-testid={`combo-text-${key}`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>

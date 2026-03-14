@@ -11,16 +11,20 @@ import { supabase } from "./supabase";
 
 // ---- Types ----
 
+export type ComboOrder = "check_text" | "text_check";
+
 export interface FieldCoord {
   x: number;
   y: number;
   label: string;
-  type: "check" | "text";
+  type: "check" | "text" | "combo";
   section: string;
   /** Font size in PDF points. Default: 8 for text, 8 for checks */
   fontSize: number;
   /** Extra spacing in points between words (separators: space, /, -, .). 0 = normal */
   wordSpacing: number;
+  /** For combo fields: order of check(X) and text. Default: "check_text" (X → Texte) */
+  comboOrder?: ComboOrder;
 }
 
 export type CalibrationMap = Record<string, FieldCoord>;

@@ -307,17 +307,59 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
   // ============================================================
   if (data.customFields) {
     for (const [key, value] of Object.entries(data.customFields)) {
-      const entry = cal[key];
-      if (!entry || !value) continue;
+      // Skip internal combo-check keys (they're handled by the combo_ parent key)
+      if (key.includes(":checked")) continue;
 
-      if (entry.type === "check") {
+      const entry = cal[key];
+      if (!entry) continue;
+
+      if (entry.type === "combo") {
+        // Combo field: draw both X (if checked) and text side by side
+        const isChecked = data.customFields[`${key}:checked`] === "true";
+        const textValue = value || "";
+        const order = entry.comboOrder ?? "check_text";
+        const size = getFontSize(cal, key, FS);
+        const ws = getWordSpacing(cal, key);
+        const usedFont = font;
+        const xBoldFont = fontBold;
+
+        if (order === "check_text") {
+          // X first, then text
+          let curX = entry.x;
+          if (isChecked) {
+            page.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
+          }
+          const xWidth = xBoldFont.widthOfTextAtSize("X", size);
+          curX += xWidth + (ws > 0 ? ws : 4); // use wordSpacing or 4pt gap
+          if (textValue) {
+            textDraw(textValue, curX, entry.y, size, false, ws);
+          }
+        } else {
+          // Text first, then X
+          let curX = entry.x;
+          if (textValue) {
+            // Calculate text width to position X after it
+            const tokens = ws > 0 ? textValue.split(WORD_SEP_RE).filter(Boolean) : [textValue];
+            let textWidth = 0;
+            for (let i = 0; i < tokens.length; i++) {
+              textWidth += usedFont.widthOfTextAtSize(tokens[i], size);
+              if (ws > 0 && i < tokens.length - 1) textWidth += ws;
+            }
+            textDraw(textValue, curX, entry.y, size, false, ws);
+            curX += textWidth + (ws > 0 ? ws : 4);
+          }
+          if (isChecked) {
+            page.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
+          }
+        }
+      } else if (entry.type === "check") {
         // Custom checkbox — draw X if value is truthy ("true")
         if (value === "true") {
           check(entry.x, entry.y, key);
         }
       } else {
         // Custom text field
-        text(value, key, entry.x, entry.y);
+        if (value) text(value, key, entry.x, entry.y);
       }
     }
   }

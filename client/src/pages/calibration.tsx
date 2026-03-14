@@ -60,6 +60,7 @@ import {
   CALIBRATION_SECTIONS,
   type CalibrationMap,
   type FieldCoord,
+  type ComboOrder,
 } from "@/lib/calibration-store";
 import { generateCerballiancePDF } from "@/lib/pdf-cerballiance";
 import {
@@ -105,10 +106,13 @@ export default function CalibrationPage() {
   // Add field dialog
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newFieldLabel, setNewFieldLabel] = useState("");
-  const [newFieldType, setNewFieldType] = useState<"text" | "check">("text");
+  const [newFieldType, setNewFieldType] = useState<"text" | "check" | "combo">("text");
+  const [newFieldComboOrder, setNewFieldComboOrder] = useState<ComboOrder>("check_text");
   const [newFieldSection, setNewFieldSection] = useState("header");
   // Expanded detail row
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  // Ref for side panel scroll viewport (for auto-scroll on marker click)
+  const sidePanelRef = useRef<HTMLDivElement>(null);
 
   // Pre-rendered image of the blank form (converted at build time from PDF → JPG at 300 DPI)
   const pdfImageUrl = "/fiche-labo-vierge.jpg";
@@ -145,6 +149,26 @@ export default function CalibrationPage() {
       setSelectedKey(key);
       // Auto-open the detail panel for the clicked field
       setExpandedKey(key);
+      // Ensure the section is uncollapsed so the row is in DOM
+      const fieldForSection = calibration[key];
+      if (fieldForSection) {
+        setCollapsedSections((prev) => {
+          if (prev.has(fieldForSection.section)) {
+            const next = new Set(prev);
+            next.delete(fieldForSection.section);
+            return next;
+          }
+          return prev;
+        });
+      }
+      // Auto-scroll to the row in the side panel after React renders
+      // Use setTimeout to wait for React to uncollapse the section and render
+      setTimeout(() => {
+        const row = document.querySelector(`[data-testid="coord-row-${key}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 80);
       const field = calibration[key];
       if (!field || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
@@ -213,7 +237,7 @@ export default function CalibrationPage() {
   const handleAddField = () => {
     if (!newFieldLabel.trim()) return;
     // Generate a unique key
-    const prefix = newFieldType === "check" ? "check_" : "text_";
+    const prefix = newFieldType === "check" ? "check_" : newFieldType === "combo" ? "combo_" : "text_";
     const slug = newFieldLabel.trim().replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]/g, "");
     let key = `${prefix}${slug}`;
     // Ensure uniqueness
@@ -230,10 +254,12 @@ export default function CalibrationPage() {
       section: newFieldSection,
       fontSize: 8,
       wordSpacing: 0,
+      ...(newFieldType === "combo" ? { comboOrder: newFieldComboOrder } : {}),
     };
     addField(key, newField);
     setShowAddDialog(false);
     setNewFieldLabel("");
+    setNewFieldComboOrder("check_text");
     setSelectedKey(key);
     toast({ title: "Champ ajouté", description: `"${newFieldLabel.trim()}" ajouté dans la section` });
   };
@@ -473,9 +499,22 @@ export default function CalibrationPage() {
               Object.entries(calibration).map(([key, field]) => {
                 // For check fields: always show "X" in preview so positions can be calibrated
                 // For text fields: use real form data or fall back to label
-                const preview = field.type === "check"
-                  ? { text: "X", isCheck: true }
-                  : (getPreviewValueForField(key, previewData) ?? { text: field.label, isCheck: false });
+                // For combo fields: show "X" + text (or text + "X") with spacing
+                let preview: { text: string; isCheck: boolean };
+                if (field.type === "check") {
+                  preview = { text: "X", isCheck: true };
+                } else if (field.type === "combo") {
+                  // Build combo preview string: X + label or custom value
+                  const comboVal = getPreviewValueForField(key, previewData);
+                  const textPart = comboVal?.text || field.label;
+                  const order = field.comboOrder ?? "check_text";
+                  preview = {
+                    text: order === "check_text" ? `X ${textPart}` : `${textPart} X`,
+                    isCheck: false,
+                  };
+                } else {
+                  preview = getPreviewValueForField(key, previewData) ?? { text: field.label, isCheck: false };
+                }
                 if (!preview.text) return null;
 
                 const screenX = (field.x / PDF_W) * 100;
@@ -542,7 +581,7 @@ export default function CalibrationPage() {
                 const isSelected = selectedKey === key;
                 const isDragged = dragging === key;
                 const color = getSectionColor(field.section);
-                const markerSize = field.type === "check" ? 8 : 6;
+                const markerSize = field.type === "check" || field.type === "combo" ? 8 : 6;
 
                 return (
                   <div
@@ -705,7 +744,7 @@ export default function CalibrationPage() {
                                 )}
 
                                 <span className="text-muted-foreground text-[10px] shrink-0">
-                                  {field.type === "check" ? "☑" : "T"}
+                                  {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : "T"}
                                 </span>
 
                                 {/* Coords */}
@@ -773,8 +812,8 @@ export default function CalibrationPage() {
                                     />
                                   </div>
 
-                                  {/* Word spacing — only for text fields */}
-                                  {field.type === "text" && (
+                                  {/* Word spacing — for text and combo fields */}
+                                  {(field.type === "text" || field.type === "combo") && (
                                     <div className="space-y-1">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -792,6 +831,28 @@ export default function CalibrationPage() {
                                         className="h-4"
                                         data-testid={`wordspacing-slider-${key}`}
                                       />
+                                    </div>
+                                  )}
+
+                                  {/* Combo order toggle */}
+                                  {field.type === "combo" && (
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                        <span>⇄</span>
+                                        <span>Ordre</span>
+                                      </div>
+                                      <Select
+                                        value={field.comboOrder ?? "check_text"}
+                                        onValueChange={(v) => updateFieldProp(key, "comboOrder", v)}
+                                      >
+                                        <SelectTrigger className="h-6 text-[10px]">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="check_text">X → Texte</SelectItem>
+                                          <SelectItem value="text_check">Texte → X</SelectItem>
+                                        </SelectContent>
+                                      </Select>
                                     </div>
                                   )}
                                 </div>
@@ -835,16 +896,31 @@ export default function CalibrationPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Type</Label>
-              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check")}>
+              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check" | "combo")}>
                 <SelectTrigger className="text-sm" data-testid="new-field-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="text">Texte (T)</SelectItem>
                   <SelectItem value="check">Case à cocher (☑)</SelectItem>
+                  <SelectItem value="combo">Combo (X + Texte)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {newFieldType === "combo" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Ordre</Label>
+                <Select value={newFieldComboOrder} onValueChange={(v) => setNewFieldComboOrder(v as ComboOrder)}>
+                  <SelectTrigger className="text-sm" data-testid="new-field-combo-order">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="check_text">X → Texte</SelectItem>
+                    <SelectItem value="text_check">Texte → X</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">Section</Label>
               <Select value={newFieldSection} onValueChange={setNewFieldSection}>

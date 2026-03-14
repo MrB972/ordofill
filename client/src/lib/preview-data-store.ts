@@ -166,6 +166,13 @@ export function getPreviewValueForField(
     return null;
   }
 
+  // Combo fields — stored with both text and check in customFieldValues
+  // text part in customFieldValues[key], check part in customFieldValues[key + ":checked"]
+  if (key.startsWith("combo_")) {
+    const textVal = data.customFieldValues[key] ?? "";
+    return textVal ? { text: textVal, isCheck: false } : null;
+  }
+
   // Custom text fields — look in customFieldValues
   if (key in data.customFieldValues) {
     const val = data.customFieldValues[key];
