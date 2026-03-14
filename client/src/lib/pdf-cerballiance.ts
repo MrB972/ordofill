@@ -46,7 +46,7 @@ const FS = 8;
 const FS_SMALL = 6.5;
 
 // Word separators — characters around which we add extra spacing
-const WORD_SEP_RE = /(\s+|\/|-|\.)/;
+const WORD_SEP_RE = /(\s+|\/|-|\.|:)/;
 
 // ================================================================
 // Helper: read coordinate + properties from calibration store

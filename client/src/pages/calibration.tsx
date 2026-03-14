@@ -509,8 +509,8 @@ export default function CalibrationPage() {
                       }}
                     >
                       {wordSpacing > 0 && !preview.isCheck
-                        ? preview.text.split(/(\s+|\/|-|\.)/).filter(Boolean).map((token, i) => (
-                            <span key={i} style={{ marginRight: i < preview.text.split(/(\s+|\/|-|\.)/).filter(Boolean).length - 1 ? `${wordSpacing}px` : 0 }}>
+                        ? preview.text.split(/(\s+|\/|-|\.|:)/).filter(Boolean).map((token, i) => (
+                            <span key={i} style={{ marginRight: i < preview.text.split(/(\s+|\/|-|\.|:)/).filter(Boolean).length - 1 ? `${wordSpacing}px` : 0 }}>
                               {token}
                             </span>
                           ))
