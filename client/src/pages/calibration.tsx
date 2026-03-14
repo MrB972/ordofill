@@ -165,8 +165,8 @@ export default function CalibrationPage() {
       setTimeout(() => {
         const panel = sidePanelRef.current;
         if (!panel) return;
-        // The Radix ScrollArea viewport is the actual scrollable element
-        const viewport = panel.querySelector("[data-radix-scroll-area-viewport]") as HTMLElement | null;
+        // The scrollable div inside the panel
+        const viewport = panel.querySelector(".overflow-y-auto") as HTMLElement | null;
         const row = panel.querySelector(`[data-testid="coord-row-${key}"]`) as HTMLElement | null;
         if (!viewport || !row) return;
         const vpRect = viewport.getBoundingClientRect();
@@ -638,8 +638,8 @@ export default function CalibrationPage() {
         </div>
 
         {/* Side panel: coordinates + controls */}
-        <div ref={sidePanelRef} className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[340px] sm:min-w-[300px] border-l bg-background`}>
-          <ScrollArea className="h-full">
+        <div ref={sidePanelRef} className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[400px] sm:min-w-[360px] sm:max-w-[400px] overflow-hidden border-l bg-background`}>
+          <div className="h-full overflow-y-auto overflow-x-hidden">
             <div className="p-3 space-y-2">
               {/* Section filter chips */}
               <div className="flex flex-wrap gap-1 mb-3">
@@ -718,9 +718,9 @@ export default function CalibrationPage() {
 
                           return (
                             <div key={key} data-testid={`coord-row-${key}`}>
-                              {/* Main row — compact: dot + label + type badge + chevron */}
+                              {/* Main row */}
                               <div
-                                className={`flex items-center gap-1.5 p-1.5 rounded text-xs cursor-pointer transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted/50"}`}
+                                className={`flex items-center gap-1 p-1.5 rounded text-xs cursor-pointer transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted/50"}`}
                                 onClick={() => {
                                   setSelectedKey(key);
                                   toggleExpanded(key);
@@ -747,24 +747,61 @@ export default function CalibrationPage() {
                                     data-testid={`rename-input-${key}`}
                                   />
                                 ) : (
-                                  <span className="flex-1 truncate text-[11px]">{field.label}</span>
+                                  <span className="flex-1 min-w-0 truncate text-[11px]">{field.label}</span>
                                 )}
 
                                 <span className="text-muted-foreground text-[10px] shrink-0">
                                   {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : field.type === "combo_date" ? "X+D" : "T"}
                                 </span>
 
-                                <ChevronDown className={`size-3 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                {/* Desktop: coords + action buttons inline */}
+                                <input
+                                  type="number"
+                                  value={Math.round(field.x * 10) / 10}
+                                  onChange={(e) => handleCoordChange(key, "x", e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="hidden sm:block w-12 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
+                                  step="0.5"
+                                  data-testid={`coord-x-${key}`}
+                                />
+                                <input
+                                  type="number"
+                                  value={Math.round(field.y * 10) / 10}
+                                  onChange={(e) => handleCoordChange(key, "y", e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="hidden sm:block w-12 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
+                                  step="0.5"
+                                  data-testid={`coord-y-${key}`}
+                                />
+                                <button
+                                  className="hidden sm:block p-0.5 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => { e.stopPropagation(); startRename(key, field.label); }}
+                                  title="Renommer"
+                                  data-testid={`rename-btn-${key}`}
+                                >
+                                  <Pencil className="size-3" />
+                                </button>
+                                <button
+                                  className="hidden sm:block p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteField(key, field.label); }}
+                                  title="Supprimer"
+                                  data-testid={`delete-btn-${key}`}
+                                >
+                                  <Trash2 className="size-3" />
+                                </button>
+
+                                {/* Mobile: chevron to indicate expandability */}
+                                <ChevronDown className={`sm:hidden size-3 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                               </div>
 
-                              {/* Expanded detail panel: coords, actions, fontSize, wordSpacing, combo order */}
+                              {/* Expanded detail panel */}
                               {isExpanded && (
                                 <div
                                   className="ml-4 mr-1 mt-1 mb-2 p-2 rounded-md bg-muted/30 border space-y-2.5"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  {/* Coordinates + action buttons */}
-                                  <div className="flex items-center gap-2">
+                                  {/* Mobile-only: Coordinates + action buttons */}
+                                  <div className="flex items-center gap-2 sm:hidden">
                                     <div className="flex items-center gap-1 flex-1">
                                       <span className="text-[10px] text-muted-foreground">X</span>
                                       <input
@@ -773,7 +810,6 @@ export default function CalibrationPage() {
                                         onChange={(e) => handleCoordChange(key, "x", e.target.value)}
                                         className="w-16 h-6 text-[11px] text-right bg-muted/50 border rounded px-1 tabular-nums"
                                         step="0.5"
-                                        data-testid={`coord-x-${key}`}
                                       />
                                       <span className="text-[10px] text-muted-foreground">Y</span>
                                       <input
@@ -782,7 +818,6 @@ export default function CalibrationPage() {
                                         onChange={(e) => handleCoordChange(key, "y", e.target.value)}
                                         className="w-16 h-6 text-[11px] text-right bg-muted/50 border rounded px-1 tabular-nums"
                                         step="0.5"
-                                        data-testid={`coord-y-${key}`}
                                       />
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
@@ -790,7 +825,6 @@ export default function CalibrationPage() {
                                         className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                                         onClick={() => startRename(key, field.label)}
                                         title="Renommer"
-                                        data-testid={`rename-btn-${key}`}
                                       >
                                         <Pencil className="size-3.5" />
                                       </button>
@@ -798,7 +832,6 @@ export default function CalibrationPage() {
                                         className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
                                         onClick={() => handleDeleteField(key, field.label)}
                                         title="Supprimer"
-                                        data-testid={`delete-btn-${key}`}
                                       >
                                         <Trash2 className="size-3.5" />
                                       </button>
@@ -886,7 +919,7 @@ export default function CalibrationPage() {
                 <p>Utilisez "Enregistrer par défaut" pour sauvegarder vos réglages.</p>
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </div>
 
