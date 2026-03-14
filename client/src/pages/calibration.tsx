@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -13,8 +12,6 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
-  GripVertical,
-  Save,
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,47 +57,12 @@ export default function CalibrationPage() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   // Container ref for coordinate calculations
   const containerRef = useRef<HTMLDivElement>(null);
-  // PDF image loaded state
-  const [pdfImageUrl, setPdfImageUrl] = useState<string | null>(null);
   // Mobile panel
   const [showSidePanel, setShowSidePanel] = useState(true);
 
-  // Convert PDF to image for background display
-  useEffect(() => {
-    async function renderPdf() {
-      try {
-        // We'll use pdf.js to render the blank form to canvas
-        const pdfjsLib = await import("pdfjs-dist");
-        // Set worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
-        const formUrl = new URL("/fiche-labo-vierge.pdf", window.location.origin).href;
-        const loadingTask = pdfjsLib.getDocument(formUrl);
-        const pdf = await loadingTask.promise;
-        const page = await pdf.getPage(1);
-
-        // Render at 2x for quality
-        const scale = 2;
-        const viewport = page.getViewport({ scale });
-        const canvas = document.createElement("canvas");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext("2d")!;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-
-        setPdfImageUrl(canvas.toDataURL("image/png"));
-      } catch (err) {
-        console.error("Failed to render PDF:", err);
-        // Fallback: just use the PDF URL directly (won't show as image)
-        toast({
-          title: "Erreur de rendu PDF",
-          description: "Impossible de charger l'aperçu du formulaire",
-          variant: "destructive",
-        });
-      }
-    }
-    renderPdf();
-  }, []);
+  // Pre-rendered image of the blank form (converted at build time from PDF → JPG at 300 DPI)
+  // Much more reliable than runtime pdf.js rendering
+  const pdfImageUrl = "/fiche-labo-vierge.jpg";
 
   // Zoom controls
   const zoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
@@ -340,20 +302,14 @@ export default function CalibrationPage() {
               height: PDF_H * zoom,
             }}
           >
-            {/* PDF background */}
-            {pdfImageUrl ? (
-              <img
-                src={pdfImageUrl}
-                alt="Formulaire vierge Cerballiance"
-                className="absolute inset-0 w-full h-full"
-                style={{ imageRendering: "auto" }}
-                draggable={false}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-                Chargement du formulaire...
-              </div>
-            )}
+            {/* PDF background — pre-rendered 300 DPI image */}
+            <img
+              src={pdfImageUrl}
+              alt="Formulaire vierge Cerballiance"
+              className="absolute inset-0 w-full h-full"
+              style={{ imageRendering: "auto" }}
+              draggable={false}
+            />
 
             {/* Markers overlay */}
             {showMarkers &&
