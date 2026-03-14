@@ -14,6 +14,7 @@ export const profiles = pgTable("profiles", {
   numeroRpps: text("numero_rpps"),
   numeroAdeli: text("numero_adeli"),
   signatureUrl: text("signature_url"),
+  ordocalUserId: uuid("ordocal_user_id"),
   onboardingCompleted: boolean("onboarding_completed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -55,9 +56,9 @@ export const formTemplates = pgTable("form_templates", {
   description: text("description"),
   originalFileUrl: text("original_file_url"),
   thumbnailUrl: text("thumbnail_url"),
-  detectedFields: jsonb("detected_fields"), // Array of detected fields
+  detectedFields: jsonb("detected_fields"),
   fieldMappings: jsonb("field_mappings"),
-  category: text("category").notNull().default("Autre"), // CPAM, Mutuelle, Prescription, Autre
+  category: text("category").notNull().default("Autre"),
   isPublic: boolean("is_public").default(false),
   uploadCount: integer("upload_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -75,7 +76,7 @@ export const filledForms = pgTable("filled_forms", {
   templateId: uuid("template_id").notNull(),
   patientId: uuid("patient_id").notNull(),
   filledData: jsonb("filled_data"),
-  status: text("status").notNull().default("draft"), // draft, completed, downloaded
+  status: text("status").notNull().default("draft"),
   generatedPdfUrl: text("generated_pdf_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -93,7 +94,7 @@ export const fieldCorrections = pgTable("field_corrections", {
   fieldName: text("field_name").notNull(),
   originalMapping: text("original_mapping"),
   correctedMapping: text("corrected_mapping"),
-  correctionType: text("correction_type").notNull(), // position, value, mapping
+  correctionType: text("correction_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

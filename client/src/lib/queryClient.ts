@@ -12,16 +12,34 @@ async function handleRequest(method: string, url: string, body?: AnyData): Promi
   if (url === "/api/auth/me") {
     // On initial load, try to get profile of demo user
     try {
-      return await db.getProfileByEmail("marie@cabinet-dupont.fr");
+      const profile = await db.getProfileByEmail("marie@cabinet-dupont.fr");
+      // Auto-resolve OrdoCAL link if not already done
+      if (profile && !profile.ordocalUserId) {
+        const linked = await db.resolveAndLinkOrdocalUser(profile.id, profile.email);
+        if (linked) profile.ordocalUserId = linked;
+      }
+      return profile;
     } catch {
       return null;
     }
   }
   if (url === "/api/auth/login" && method === "POST") {
-    return await db.getProfileByEmail(body?.email);
+    const profile = await db.getProfileByEmail(body?.email);
+    // Auto-resolve OrdoCAL link on login
+    if (profile && !profile.ordocalUserId) {
+      const linked = await db.resolveAndLinkOrdocalUser(profile.id, profile.email);
+      if (linked) profile.ordocalUserId = linked;
+    }
+    return profile;
   }
   if (url === "/api/auth/register" && method === "POST") {
-    return await db.createProfile({ email: body?.email, fullName: body?.fullName });
+    const profile = await db.createProfile({ email: body?.email, fullName: body?.fullName });
+    // Auto-resolve OrdoCAL link on registration
+    if (profile) {
+      const linked = await db.resolveAndLinkOrdocalUser(profile.id, profile.email ?? body?.email);
+      if (linked) profile.ordocalUserId = linked;
+    }
+    return profile;
   }
 
   // STATS
@@ -65,9 +83,11 @@ async function handleRequest(method: string, url: string, body?: AnyData): Promi
     return await db.updateProfile(profileMatch[1], body);
   }
 
-  // ORDOCAL PATIENTS (cross-app)
-  if (url === "/api/ordocal/patients" && method === "GET") {
-    return await db.getOrdocalPatients();
+  // ORDOCAL PATIENTS (cross-app) — pass ordocalUserId from query param
+  if (url.startsWith("/api/ordocal/patients") && method === "GET") {
+    const params = new URLSearchParams(url.split("?")[1] ?? "");
+    const ordocalUserId = params.get("ordocalUserId");
+    return await db.getOrdocalPatients(ordocalUserId);
   }
 
   // SUGGESTIONS
@@ -114,7 +134,12 @@ export const getQueryFn: <T>(options: {
     const url = queryKey[0] as string;
     let fullUrl = url;
     if (queryKey.length > 1 && queryKey[1]) {
-      fullUrl = `${url}?templateId=${queryKey[1]}`;
+      // OrdoCAL patients pass ordocalUserId as 2nd key segment
+      if (url.startsWith("/api/ordocal/patients")) {
+        fullUrl = `${url}?ordocalUserId=${queryKey[1]}`;
+      } else {
+        fullUrl = `${url}?templateId=${queryKey[1]}`;
+      }
     }
     try {
       return (await handleRequest("GET", fullUrl)) as T;

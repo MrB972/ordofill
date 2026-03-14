@@ -173,13 +173,34 @@ export async function getSuggestions(templateId: string) {
   return (data ?? []).map(toCamel);
 }
 
-// ---- OrdoCAL Cross-App: Read patients from OrdoCAL's patients table ----
+// ---- OrdoCAL Cross-App ----
 
-export async function getOrdocalPatients() {
+// Auto-resolve: find the OrdoCAL user_id by email (via Supabase Auth)
+// Called once at login — stores the result in ordofill_profiles.ordocal_user_id
+export async function resolveAndLinkOrdocalUser(profileId: string, email: string) {
+  // Call the SECURITY DEFINER function that reads auth.users
+  const { data: ordocalUserId, error } = await supabase
+    .rpc("resolve_ordocal_user_id", { p_email: email });
+  if (error) {
+    console.warn("[OrdoCAL] resolve_ordocal_user_id failed:", error.message);
+    return null;
+  }
+  if (!ordocalUserId) return null; // No OrdoCAL account with this email
+
+  // Persist the link in the profile so we don't have to resolve every time
+  await supabase
+    .from("ordofill_profiles")
+    .update({ ordocal_user_id: ordocalUserId, updated_at: new Date().toISOString() })
+    .eq("id", profileId);
+
+  return ordocalUserId as string;
+}
+
+// Read OrdoCAL patients via SECURITY DEFINER RPC (private per account)
+export async function getOrdocalPatients(ordocalUserId: string | null) {
+  if (!ordocalUserId) return [];
   const { data, error } = await supabase
-    .from("patients")
-    .select("id, nom, prenom, telephone, date_naissance, adresse, ville, code_postal, numero_securite_sociale, genre, medecin_traitant, notes")
-    .order("nom", { ascending: true });
+    .rpc("get_ordocal_patients_for_user", { p_owner_user_id: ordocalUserId });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
