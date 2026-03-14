@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   User,
   Pen,
@@ -12,6 +13,7 @@ import {
   XCircle,
   RefreshCw,
   Loader2,
+  LogOut,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,9 +26,10 @@ import { apiRequest, queryClient as qc } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ParametresPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -302,8 +305,20 @@ export default function ParametresPage() {
                   Importer des donnees
                 </Button>
               </div>
-              <div className="pt-4 border-t">
-                <Button variant="destructive" data-testid="delete-account">
+              <div className="pt-4 border-t flex flex-col gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    logout();
+                    navigate("/auth");
+                  }}
+                  data-testid="logout-btn"
+                  className="w-fit"
+                >
+                  <LogOut className="size-4 mr-2" />
+                  Se deconnecter
+                </Button>
+                <Button variant="destructive" data-testid="delete-account" className="w-fit">
                   Supprimer mon compte
                 </Button>
               </div>

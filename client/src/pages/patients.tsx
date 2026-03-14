@@ -10,15 +10,17 @@ import {
   Mail,
   Trash2,
   RefreshCw,
-  CalendarSync,
   Loader2,
-  CheckCircle2,
+  CalendarRange,
+  Users,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import type { Patient } from "@shared/schema";
@@ -57,6 +59,11 @@ interface OrdocalPatient {
   genre: string | null;
   medecin_traitant: string | null;
   notes: string | null;
+}
+
+// Helper to format name: NOM Prénom
+function formatName(lastName: string, firstName: string) {
+  return `${(lastName ?? "").toUpperCase()} ${(firstName ?? "").charAt(0).toUpperCase() + (firstName ?? "").slice(1).toLowerCase()}`;
 }
 
 const staggerContainer = {
@@ -77,7 +84,9 @@ export default function PatientsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
   const [detailPatient, setDetailPatient] = useState<Patient | null>(null);
+  const [detailOrdocal, setDetailOrdocal] = useState<OrdocalPatient | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [viewSource, setViewSource] = useState<"ordofill" | "ordocal">("ordofill");
 
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -95,6 +104,14 @@ export default function PatientsPage() {
 
   const { data: patients = [] } = useQuery<Patient[]>({
     queryKey: ["/api/patients"],
+  });
+
+  // OrdoCAL patients
+  const ordocalUserId = user?.ordocalUserId;
+  const { data: ordocalPatients = [], isLoading: ordocalLoading } = useQuery<OrdocalPatient[]>({
+    queryKey: ["/api/ordocal/patients", ordocalUserId],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!ordocalUserId,
   });
 
   const createMutation = useMutation({
@@ -128,7 +145,20 @@ export default function PatientsPage() {
     },
   });
 
-  const filtered = patients.filter((p) => {
+  // Sort alphabetically by last name then first name
+  const sortedPatients = [...patients].sort((a, b) => {
+    const cmp = (a.lastName ?? "").localeCompare(b.lastName ?? "", "fr", { sensitivity: "base" });
+    if (cmp !== 0) return cmp;
+    return (a.firstName ?? "").localeCompare(b.firstName ?? "", "fr", { sensitivity: "base" });
+  });
+
+  const sortedOrdocal = [...ordocalPatients].sort((a, b) => {
+    const cmp = (a.nom ?? "").localeCompare(b.nom ?? "", "fr", { sensitivity: "base" });
+    if (cmp !== 0) return cmp;
+    return (a.prenom ?? "").localeCompare(b.prenom ?? "", "fr", { sensitivity: "base" });
+  });
+
+  const filteredOrdofill = sortedPatients.filter((p) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -136,6 +166,17 @@ export default function PatientsPage() {
       p.lastName.toLowerCase().includes(q) ||
       p.city?.toLowerCase().includes(q) ||
       p.numeroSecuriteSociale?.includes(q)
+    );
+  });
+
+  const filteredOrdocal = sortedOrdocal.filter((p) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (p.nom ?? "").toLowerCase().includes(q) ||
+      (p.prenom ?? "").toLowerCase().includes(q) ||
+      p.ville?.toLowerCase().includes(q) ||
+      p.numero_securite_sociale?.includes(q)
     );
   });
 
@@ -202,284 +243,379 @@ export default function PatientsPage() {
     resetForm();
   };
 
-  const getInitials = (p: Patient) =>
-    `${p.firstName[0] ?? ""}${p.lastName[0] ?? ""}`.toUpperCase();
+  const getInitials = (first: string, last: string) =>
+    `${(first ?? "")[0] ?? ""}${(last ?? "")[0] ?? ""}`.toUpperCase();
 
   const maskSSN = (ssn: string | null) => {
     if (!ssn) return "---";
     return ssn.slice(0, 3) + " *** *** **";
   };
 
+  const handleSync = async () => {
+    if (!user?.ordocalUserId) {
+      toast({
+        title: "Compte OrdoCAL non lie",
+        description: "Allez dans Parametres pour lier votre compte OrdoCAL",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSyncing(true);
+    try {
+      const res = await apiRequest("GET", `/api/ordocal/patients?ordocalUserId=${user.ordocalUserId}`);
+      const ordocalPts: OrdocalPatient[] = await res.json();
+      let imported = 0;
+      for (const op of ordocalPts) {
+        const exists = patients.some(
+          (p) =>
+            p.firstName.toLowerCase() === (op.prenom ?? "").toLowerCase() &&
+            p.lastName.toLowerCase() === (op.nom ?? "").toLowerCase()
+        );
+        if (!exists) {
+          await createMutation.mutateAsync({
+            firstName: op.prenom ?? "",
+            lastName: op.nom ?? "",
+            dateOfBirth: op.date_naissance ?? "",
+            gender: op.genre ?? "",
+            phone: op.telephone ?? "",
+            email: "",
+            address: op.adresse ?? "",
+            city: op.ville ?? "",
+            postalCode: op.code_postal ?? "",
+            numeroSecuriteSociale: op.numero_securite_sociale ?? "",
+            medecinTraitant: op.medecin_traitant ?? "",
+            notes: op.notes ?? "",
+          });
+          imported++;
+        }
+      }
+      toast({
+        title: "Sync OrdoCAL terminee",
+        description: imported > 0
+          ? `${imported} patient(s) importe(s) depuis OrdoCAL`
+          : "Tous les patients sont deja synchronises",
+      });
+    } catch (err) {
+      toast({
+        title: "Erreur de synchronisation",
+        description: "Impossible de recuperer les patients OrdoCAL",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6" data-testid="patients-page">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Patients</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={async () => {
-              if (!user?.ordocalUserId) {
-                toast({
-                  title: "Compte OrdoCAL non li\u00e9",
-                  description: "Allez dans Param\u00e8tres pour lier votre compte OrdoCAL",
-                  variant: "destructive",
-                });
-                return;
-              }
-              setSyncing(true);
-              try {
-                const res = await apiRequest("GET", `/api/ordocal/patients?ordocalUserId=${user.ordocalUserId}`);
-                const ordocalPatients: OrdocalPatient[] = await res.json();
-                let imported = 0;
-                for (const op of ordocalPatients) {
-                  const exists = patients.some(
-                    (p) =>
-                      p.firstName.toLowerCase() === (op.prenom ?? "").toLowerCase() &&
-                      p.lastName.toLowerCase() === (op.nom ?? "").toLowerCase()
-                  );
-                  if (!exists) {
-                    await createMutation.mutateAsync({
-                      firstName: op.prenom ?? "",
-                      lastName: op.nom ?? "",
-                      dateOfBirth: op.date_naissance ?? "",
-                      gender: op.genre ?? "",
-                      phone: op.telephone ?? "",
-                      email: "",
-                      address: op.adresse ?? "",
-                      city: op.ville ?? "",
-                      postalCode: op.code_postal ?? "",
-                      numeroSecuriteSociale: op.numero_securite_sociale ?? "",
-                      medecinTraitant: op.medecin_traitant ?? "",
-                      notes: op.notes ?? "",
-                    });
-                    imported++;
-                  }
-                }
-                toast({
-                  title: "Sync OrdoCAL terminee",
-                  description: imported > 0
-                    ? `${imported} patient(s) importe(s) depuis OrdoCAL`
-                    : "Tous les patients sont deja synchronises",
-                });
-              } catch (err) {
-                toast({
-                  title: "Erreur de synchronisation",
-                  description: "Impossible de recuperer les patients OrdoCAL",
-                  variant: "destructive",
-                });
-              } finally {
-                setSyncing(false);
-              }
-            }}
-            disabled={syncing}
-            data-testid="sync-ordocal-btn"
-          >
-            {syncing ? (
-              <Loader2 className="size-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="size-4 mr-2" />
-            )}
-            {syncing ? "Synchronisation..." : "Sync OrdoCAL"}
-          </Button>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd} data-testid="add-patient-btn">
-              <Plus className="size-4 mr-2" />
-              Ajouter un patient
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="patient-dialog">
-            <DialogHeader>
-              <DialogTitle>
-                {editPatient ? "Modifier le patient" : "Nouveau patient"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Prenom</Label>
-                  <Input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                    data-testid="patient-firstname"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nom</Label>
-                  <Input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                    data-testid="patient-lastname"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date de naissance</Label>
-                  <Input
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    data-testid="patient-dob"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Genre</Label>
-                  <Select value={gender} onValueChange={setGender}>
-                    <SelectTrigger data-testid="patient-gender">
-                      <SelectValue placeholder="Selectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="M">Masculin</SelectItem>
-                      <SelectItem value="F">Feminin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>N. Securite Sociale</Label>
-                <Input
-                  value={numeroSecuriteSociale}
-                  onChange={(e) => setNumeroSecuriteSociale(e.target.value)}
-                  placeholder="1 XX XX XX XXX XXX XX"
-                  data-testid="patient-ssn"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Telephone</Label>
-                  <Input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    data-testid="patient-phone"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    data-testid="patient-email"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Adresse</Label>
-                <Input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  data-testid="patient-address"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Ville</Label>
-                  <Input
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    data-testid="patient-city"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Code postal</Label>
-                  <Input
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    data-testid="patient-postal"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Medecin traitant</Label>
-                <Input
-                  value={medecinTraitant}
-                  onChange={(e) => setMedecinTraitant(e.target.value)}
-                  data-testid="patient-medecin"
-                />
-              </div>
-              <Button type="submit" className="w-full" data-testid="patient-submit">
-                {editPatient ? "Enregistrer" : "Ajouter"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher un patient..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-          data-testid="patient-search"
-        />
-      </div>
-
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-      >
-        {filtered.map((p) => (
-          <motion.div key={p.id} variants={staggerItem}>
-            <Card
-              className="glass rounded-xl card-hover-lift cursor-pointer group border-white/[0.08]"
-              onClick={() => setDetailPatient(p)}
-              data-testid={`patient-card-${p.id}`}
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" data-testid="patients-page">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Patients</h1>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSync}
+              disabled={syncing}
+              data-testid="sync-ordocal-btn"
             >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar className="size-10">
-                    <AvatarFallback className="avatar-gradient text-sm font-semibold">
-                      {getInitials(p)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {p.firstName} {p.lastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{maskSSN(p.numeroSecuriteSociale)}</p>
+              {syncing ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4 mr-2" />
+              )}
+              {syncing ? "Sync..." : "Sync OrdoCAL"}
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openAdd} size="sm" data-testid="add-patient-btn">
+                  <Plus className="size-4 mr-2" />
+                  Ajouter
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="patient-dialog">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editPatient ? "Modifier le patient" : "Nouveau patient"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 py-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Prenom</Label>
+                      <Input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        data-testid="patient-firstname"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nom</Label>
+                      <Input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        data-testid="patient-lastname"
+                      />
+                    </div>
                   </div>
-                </div>
-                {p.city && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="size-3" />
-                    {p.city}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Date de naissance</Label>
+                      <Input
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        data-testid="patient-dob"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Genre</Label>
+                      <Select value={gender} onValueChange={setGender}>
+                        <SelectTrigger data-testid="patient-gender">
+                          <SelectValue placeholder="Selectionner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="M">Masculin</SelectItem>
+                          <SelectItem value="F">Feminin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground" data-testid="patients-empty">
-          <User className="size-12 mx-auto mb-3 opacity-50" />
-          <p>Aucun patient trouve</p>
+                  <div className="space-y-2">
+                    <Label>N. Securite Sociale</Label>
+                    <Input
+                      value={numeroSecuriteSociale}
+                      onChange={(e) => setNumeroSecuriteSociale(e.target.value)}
+                      placeholder="1 XX XX XX XXX XXX XX"
+                      data-testid="patient-ssn"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Telephone</Label>
+                      <Input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        data-testid="patient-phone"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        data-testid="patient-email"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Adresse</Label>
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      data-testid="patient-address"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Ville</Label>
+                      <Input
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        data-testid="patient-city"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Code postal</Label>
+                      <Input
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        data-testid="patient-postal"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Medecin traitant</Label>
+                    <Input
+                      value={medecinTraitant}
+                      onChange={(e) => setMedecinTraitant(e.target.value)}
+                      data-testid="patient-medecin"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" data-testid="patient-submit">
+                    {editPatient ? "Enregistrer" : "Ajouter"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
+
+        {/* Toggle OrdoFill / OrdoCAL */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <Tabs value={viewSource} onValueChange={(v) => { setViewSource(v as "ordofill" | "ordocal"); setSearch(""); }}>
+            <TabsList data-testid="patients-source-tabs">
+              <TabsTrigger value="ordofill" className="text-xs" data-testid="patients-tab-ordofill">
+                <Users className="size-3 mr-1" />
+                OrdoFill ({patients.length})
+              </TabsTrigger>
+              <TabsTrigger value="ordocal" className="text-xs" data-testid="patients-tab-ordocal" disabled={!ordocalUserId}>
+                <CalendarRange className="size-3 mr-1" />
+                OrdoCAL ({ordocalPatients.length})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative flex-1 max-w-md w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un patient..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+              data-testid="patient-search"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* OrdoFill patients view */}
+      {viewSource === "ordofill" && (
+        <>
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+          >
+            {filteredOrdofill.map((p) => (
+              <motion.div key={p.id} variants={staggerItem}>
+                <Card
+                  className="glass rounded-xl card-hover-lift cursor-pointer group border-white/[0.08]"
+                  onClick={() => setDetailPatient(p)}
+                  data-testid={`patient-card-${p.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar className="size-10">
+                        <AvatarFallback className="avatar-gradient text-sm font-semibold">
+                          {getInitials(p.firstName, p.lastName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {formatName(p.lastName, p.firstName)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{maskSSN(p.numeroSecuriteSociale)}</p>
+                      </div>
+                    </div>
+                    {p.city && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3" />
+                        {p.city}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {filteredOrdofill.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground" data-testid="patients-empty">
+              <User className="size-12 mx-auto mb-3 opacity-50" />
+              <p>Aucun patient trouve</p>
+            </div>
+          )}
+        </>
       )}
 
+      {/* OrdoCAL patients view (read-only) */}
+      {viewSource === "ordocal" && (
+        <>
+          {ordocalLoading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Loader2 className="size-8 mx-auto mb-3 animate-spin" />
+              <p>Chargement des patients OrdoCAL...</p>
+            </div>
+          ) : !ordocalUserId ? (
+            <div className="text-center py-12 text-muted-foreground" data-testid="ordocal-not-linked">
+              <CalendarRange className="size-12 mx-auto mb-3 opacity-50" />
+              <p>Compte OrdoCAL non lie</p>
+              <p className="text-xs mt-1">Allez dans Parametres pour lier votre compte OrdoCAL</p>
+            </div>
+          ) : (
+            <>
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+              >
+                {filteredOrdocal.map((p) => (
+                  <motion.div key={p.id} variants={staggerItem}>
+                    <Card
+                      className="glass rounded-xl card-hover-lift cursor-pointer group border-white/[0.08]"
+                      onClick={() => setDetailOrdocal(p)}
+                      data-testid={`ordocal-card-${p.id}`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Avatar className="size-10">
+                            <AvatarFallback className="avatar-gradient text-sm font-semibold">
+                              {getInitials(p.prenom, p.nom)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">
+                              {formatName(p.nom, p.prenom)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{maskSSN(p.numero_securite_sociale)}</p>
+                          </div>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto shrink-0">
+                            OrdoCAL
+                          </Badge>
+                        </div>
+                        {p.ville && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="size-3" />
+                            {p.ville}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {filteredOrdocal.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <User className="size-12 mx-auto mb-3 opacity-50" />
+                  <p>Aucun patient OrdoCAL trouve</p>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* OrdoFill patient detail sheet */}
       <Sheet open={!!detailPatient} onOpenChange={(open) => !open && setDetailPatient(null)}>
         <SheetContent data-testid="patient-detail-sheet">
           {detailPatient && (
             <>
               <SheetHeader>
                 <SheetTitle>
-                  {detailPatient.firstName} {detailPatient.lastName}
+                  {formatName(detailPatient.lastName, detailPatient.firstName)}
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 space-y-4">
                 <div className="flex justify-center">
                   <Avatar className="size-16">
                     <AvatarFallback className="avatar-gradient text-xl font-bold">
-                      {getInitials(detailPatient)}
+                      {getInitials(detailPatient.firstName, detailPatient.lastName)}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -555,6 +691,76 @@ export default function PatientsPage() {
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* OrdoCAL patient detail sheet (read-only) */}
+      <Sheet open={!!detailOrdocal} onOpenChange={(open) => !open && setDetailOrdocal(null)}>
+        <SheetContent data-testid="ordocal-detail-sheet">
+          {detailOrdocal && (
+            <>
+              <SheetHeader>
+                <SheetTitle>
+                  {formatName(detailOrdocal.nom, detailOrdocal.prenom)}
+                  <Badge variant="secondary" className="ml-2 text-xs">OrdoCAL</Badge>
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                <div className="flex justify-center">
+                  <Avatar className="size-16">
+                    <AvatarFallback className="avatar-gradient text-xl font-bold">
+                      {getInitials(detailOrdocal.prenom, detailOrdocal.nom)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="space-y-3 text-sm">
+                  {detailOrdocal.numero_securite_sociale && (
+                    <div className="flex items-center gap-2">
+                      <User className="size-4 text-muted-foreground" />
+                      <span>N. SS: {detailOrdocal.numero_securite_sociale}</span>
+                    </div>
+                  )}
+                  {detailOrdocal.telephone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="size-4 text-muted-foreground" />
+                      <span>{detailOrdocal.telephone}</span>
+                    </div>
+                  )}
+                  {detailOrdocal.ville && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="size-4 text-muted-foreground" />
+                      <span>
+                        {detailOrdocal.adresse && `${detailOrdocal.adresse}, `}
+                        {detailOrdocal.code_postal && `${detailOrdocal.code_postal} `}
+                        {detailOrdocal.ville}
+                      </span>
+                    </div>
+                  )}
+                  {detailOrdocal.date_naissance && (
+                    <p>
+                      <span className="text-muted-foreground">Ne(e) le: </span>
+                      {new Date(detailOrdocal.date_naissance).toLocaleDateString("fr-FR")}
+                    </p>
+                  )}
+                  {detailOrdocal.medecin_traitant && (
+                    <p>
+                      <span className="text-muted-foreground">Medecin traitant: </span>
+                      {detailOrdocal.medecin_traitant}
+                    </p>
+                  )}
+                  {detailOrdocal.notes && (
+                    <p>
+                      <span className="text-muted-foreground">Notes: </span>
+                      {detailOrdocal.notes}
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground italic pt-2">
+                  Patient provenant d'OrdoCAL (lecture seule)
+                </p>
               </div>
             </>
           )}

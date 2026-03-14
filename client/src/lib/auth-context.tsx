@@ -50,8 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await registerMutation.mutateAsync({ email, fullName });
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await apiRequest("POST", "/api/auth/logout");
     queryClient.setQueryData(["/api/auth/me"], null);
+    // Clear all cached data
+    queryClient.clear();
   };
 
   return (

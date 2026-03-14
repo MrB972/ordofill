@@ -10,9 +10,11 @@ type AnyData = Record<string, any>;
 async function handleRequest(method: string, url: string, body?: AnyData): Promise<unknown> {
   // AUTH
   if (url === "/api/auth/me") {
-    // On initial load, try to get profile of demo user
+    // On initial load, try to restore session from localStorage
     try {
-      const profile = await db.getProfileByEmail("marie@cabinet-dupont.fr");
+      const savedEmail = localStorage.getItem("ordofill_user_email");
+      if (!savedEmail) return null;
+      const profile = await db.getProfileByEmail(savedEmail);
       // Auto-resolve OrdoCAL link if not already done
       if (profile && !profile.ordocalUserId) {
         const linked = await db.resolveAndLinkOrdocalUser(profile.id, profile.email);
@@ -30,6 +32,8 @@ async function handleRequest(method: string, url: string, body?: AnyData): Promi
       const linked = await db.resolveAndLinkOrdocalUser(profile.id, profile.email);
       if (linked) profile.ordocalUserId = linked;
     }
+    // Persist session
+    if (profile?.email) localStorage.setItem("ordofill_user_email", profile.email);
     return profile;
   }
   if (url === "/api/auth/register" && method === "POST") {
@@ -39,7 +43,14 @@ async function handleRequest(method: string, url: string, body?: AnyData): Promi
       const linked = await db.resolveAndLinkOrdocalUser(profile.id, profile.email ?? body?.email);
       if (linked) profile.ordocalUserId = linked;
     }
+    // Persist session
+    if (profile?.email) localStorage.setItem("ordofill_user_email", profile.email);
     return profile;
+  }
+  // LOGOUT
+  if (url === "/api/auth/logout" && method === "POST") {
+    localStorage.removeItem("ordofill_user_email");
+    return { success: true };
   }
 
   // STATS

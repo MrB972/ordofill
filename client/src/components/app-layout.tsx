@@ -1,13 +1,12 @@
 import { type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Moon, Sun, Bell, Search } from "lucide-react";
+import { Moon, Sun, Bell } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const pageTransition = {
@@ -41,16 +40,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             data-testid="app-header"
           >
             <SidebarTrigger data-testid="sidebar-toggle" />
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  className="pl-9 h-8 bg-card/50 backdrop-blur-sm border-white/[0.08] focus:border-primary/50"
-                  data-testid="header-search"
-                />
-              </div>
-            </div>
+            <div className="flex-1" />
             <div className="flex items-center gap-2 ml-auto">
               <Button
                 variant="ghost"
