@@ -1,13 +1,13 @@
 /**
- * Calibration Store for Cerballiance PDF
+ * Calibration Store for Cerballiance PDF — V2
  * 
- * Stores coordinate offsets for all fields and checkboxes.
- * Uses in-memory state with JSON export/import for persistence
- * (no localStorage — blocked in sandboxed iframe).
- * 
- * The "defaults" match the V3 calibrated coordinates in pdf-cerballiance.ts.
- * User overrides are stored as deltas or absolute positions.
+ * Each field has: x, y, label, type, section, fontSize, wordSpacing
+ * Supports: add, delete, rename, update all properties
+ * Persistence: Supabase (save as default) + JSON export/import
  */
+
+import { useSyncExternalStore } from "react";
+import { supabase } from "./supabase";
 
 // ---- Types ----
 
@@ -16,8 +16,11 @@ export interface FieldCoord {
   y: number;
   label: string;
   type: "check" | "text";
-  /** Which section this field belongs to */
   section: string;
+  /** Font size in PDF points. Default: 8 for text, 8 for checks */
+  fontSize: number;
+  /** Extra spacing in points between words (separators: space, /, -, .). 0 = normal */
+  wordSpacing: number;
 }
 
 export type CalibrationMap = Record<string, FieldCoord>;
@@ -32,159 +35,165 @@ const JAUNE_START_Y = 405;
 const JAUNE_ROW_H = 9.3;
 function jauneY(row: number): number { return JAUNE_START_Y + row * JAUNE_ROW_H; }
 
+/** Helper: create a text field with defaults */
+function t(x: number, y: number, label: string, section: string, fontSize = 8): FieldCoord {
+  return { x, y, label, type: "text", section, fontSize, wordSpacing: 0 };
+}
+
+/** Helper: create a check field with defaults */
+function c(x: number, y: number, label: string, section: string): FieldCoord {
+  return { x, y, label, type: "check", section, fontSize: 8, wordSpacing: 0 };
+}
+
 export function getDefaultCalibration(): CalibrationMap {
   return {
     // ============ TEXT FIELDS ============
-    "text_prescripteur": { x: 290, y: 102, label: "Prescripteur", type: "text", section: "header" },
-    "text_medecinTraitant": { x: 530, y: 97, label: "Médecin traitant", type: "text", section: "header" },
-    "text_ideName": { x: 35, y: 167, label: "IDE Nom", type: "text", section: "ide" },
-    "text_ideCabinet": { x: 55, y: 180, label: "IDE Cabinet", type: "text", section: "ide" },
-    "text_datePrelevement": { x: 120, y: 195, label: "Date prélèvement", type: "text", section: "ide" },
-    "text_heurePrelevement": { x: 130, y: 220, label: "Heure prélèvement", type: "text", section: "ide" },
-    "text_nomUsuel": { x: 340, y: 168, label: "Nom usuel", type: "text", section: "patient" },
-    "text_nomNaissance": { x: 510, y: 163, label: "Nom naissance", type: "text", section: "patient" },
-    "text_prenoms": { x: 330, y: 180, label: "Prénoms", type: "text", section: "patient" },
-    "text_telephone": { x: 490, y: 188, label: "Téléphone", type: "text", section: "patient" },
-    "text_dateNaissance": { x: 325, y: 195, label: "Date naissance", type: "text", section: "patient" },
-    "text_adresse": { x: 330, y: 210, label: "Adresse", type: "text", section: "patient" },
-    "text_numSecu": { x: 310, y: 222, label: "N°SS", type: "text", section: "patient" },
-    "text_traitements": { x: 130, y: 270, label: "Traitements", type: "text", section: "clinique" },
-    "text_posologie": { x: 200, y: 377, label: "Posologie", type: "text", section: "anticoagulant" },
+    "text_prescripteur": t(290, 102, "Prescripteur", "header"),
+    "text_medecinTraitant": t(530, 97, "Médecin traitant", "header"),
+    "text_ideName": t(35, 167, "IDE Nom", "ide"),
+    "text_ideCabinet": t(55, 180, "IDE Cabinet", "ide"),
+    "text_datePrelevement": t(120, 195, "Date prélèvement", "ide"),
+    "text_heurePrelevement": t(130, 220, "Heure prélèvement", "ide"),
+    "text_nomUsuel": t(340, 168, "Nom usuel", "patient"),
+    "text_nomNaissance": t(510, 163, "Nom naissance", "patient"),
+    "text_prenoms": t(330, 180, "Prénoms", "patient"),
+    "text_telephone": t(490, 188, "Téléphone", "patient"),
+    "text_dateNaissance": t(325, 195, "Date naissance", "patient"),
+    "text_adresse": t(330, 210, "Adresse", "patient", 6.5),
+    "text_numSecu": t(310, 222, "N°SS", "patient"),
+    "text_traitements": t(130, 270, "Traitements", "clinique", 6.5),
+    "text_posologie": t(200, 377, "Posologie", "anticoagulant"),
 
     // ============ CHECKBOXES ============
-    // Header
-    "check_urgent": { x: 492, y: 102, label: "Urgent", type: "check", section: "header" },
-    // Sexe
-    "check_sexeH": { x: 505, y: 170, label: "Sexe H", type: "check", section: "patient" },
-    "check_sexeF": { x: 528, y: 170, label: "Sexe F", type: "check", section: "patient" },
-    // Clinique
-    "check_grossesse": { x: 250, y: 263, label: "Grossesse", type: "check", section: "clinique" },
-    "check_fievre": { x: 345, y: 263, label: "Fièvre", type: "check", section: "clinique" },
-    // INR cible
-    "check_inr23": { x: 432, y: 377, label: "INR 2-3", type: "check", section: "anticoagulant" },
-    "check_inr345": { x: 492, y: 377, label: "INR 3-4,5", type: "check", section: "anticoagulant" },
+    "check_urgent": c(492, 102, "Urgent", "header"),
+    "check_sexeH": c(505, 170, "Sexe H", "patient"),
+    "check_sexeF": c(528, 170, "Sexe F", "patient"),
+    "check_grossesse": c(250, 263, "Grossesse", "clinique"),
+    "check_fievre": c(345, 263, "Fièvre", "clinique"),
+    "check_inr23": c(432, 377, "INR 2-3", "anticoagulant"),
+    "check_inr345": c(492, 377, "INR 3-4,5", "anticoagulant"),
 
-    // ---- Anticoagulants ----
-    "check_Sintrom": { x: 82, y: 365, label: "Sintrom", type: "check", section: "anticoagulant" },
-    "check_Previscan": { x: 140, y: 365, label: "Previscan", type: "check", section: "anticoagulant" },
-    "check_Coumadine": { x: 210, y: 365, label: "Coumadine", type: "check", section: "anticoagulant" },
-    "check_Fraxi": { x: 290, y: 365, label: "Fraxi", type: "check", section: "anticoagulant" },
-    "check_Lovenox": { x: 342, y: 365, label: "Lovenox", type: "check", section: "anticoagulant" },
-    "check_Innohep": { x: 405, y: 365, label: "Innohep", type: "check", section: "anticoagulant" },
-    "check_Calciparine": { x: 468, y: 365, label: "Calciparine", type: "check", section: "anticoagulant" },
-    "check_Orgaran": { x: 540, y: 365, label: "Orgaran", type: "check", section: "anticoagulant" },
-    "check_Rivaroxaban": { x: 365, y: 377, label: "Rivaroxaban", type: "check", section: "anticoagulant" },
-    "check_Apixaban": { x: 438, y: 377, label: "Apixaban", type: "check", section: "anticoagulant" },
-    "check_Dabigatran": { x: 510, y: 377, label: "Dabigatran", type: "check", section: "anticoagulant" },
+    // Anticoagulants
+    "check_Sintrom": c(82, 365, "Sintrom", "anticoagulant"),
+    "check_Previscan": c(140, 365, "Previscan", "anticoagulant"),
+    "check_Coumadine": c(210, 365, "Coumadine", "anticoagulant"),
+    "check_Fraxi": c(290, 365, "Fraxi", "anticoagulant"),
+    "check_Lovenox": c(342, 365, "Lovenox", "anticoagulant"),
+    "check_Innohep": c(405, 365, "Innohep", "anticoagulant"),
+    "check_Calciparine": c(468, 365, "Calciparine", "anticoagulant"),
+    "check_Orgaran": c(540, 365, "Orgaran", "anticoagulant"),
+    "check_Rivaroxaban": c(365, 377, "Rivaroxaban", "anticoagulant"),
+    "check_Apixaban": c(438, 377, "Apixaban", "anticoagulant"),
+    "check_Dabigatran": c(510, 377, "Dabigatran", "anticoagulant"),
 
-    // ---- TUBE BLEU ----
-    "check_INR": { x: 14, y: 349, label: "INR", type: "check", section: "tube_bleu" },
-    "check_TCA": { x: 62, y: 349, label: "TCA", type: "check", section: "tube_bleu" },
-    "check_Fibrine": { x: 112, y: 349, label: "Fibrine", type: "check", section: "tube_bleu" },
-    "check_TP": { x: 155, y: 349, label: "TP", type: "check", section: "tube_bleu" },
-    "check_AT3": { x: 210, y: 349, label: "AT3", type: "check", section: "tube_bleu" },
-    "check_Plaquettes sur tube citrate": { x: 378, y: 349, label: "Plaquettes citrate", type: "check", section: "tube_bleu" },
-    "check_Ddimeres": { x: 505, y: 349, label: "D-dimères", type: "check", section: "tube_bleu" },
+    // TUBE BLEU
+    "check_INR": c(14, 349, "INR", "tube_bleu"),
+    "check_TCA": c(62, 349, "TCA", "tube_bleu"),
+    "check_Fibrine": c(112, 349, "Fibrine", "tube_bleu"),
+    "check_TP": c(155, 349, "TP", "tube_bleu"),
+    "check_AT3": c(210, 349, "AT3", "tube_bleu"),
+    "check_Plaquettes sur tube citrate": c(378, 349, "Plaquettes citrate", "tube_bleu"),
+    "check_Ddimeres": c(505, 349, "D-dimères", "tube_bleu"),
 
-    // ---- TUBE JAUNE Col 1 ----
-    "check_ACE": { x: COL1_X, y: jauneY(0), label: "ACE", type: "check", section: "tube_jaune" },
-    "check_Acide urique": { x: COL1_X, y: jauneY(1), label: "Acide urique", type: "check", section: "tube_jaune" },
-    "check_AFP": { x: COL1_X, y: jauneY(2), label: "AFP", type: "check", section: "tube_jaune" },
-    "check_Ag HBS": { x: COL1_X, y: jauneY(3), label: "Ag HBS", type: "check", section: "tube_jaune" },
-    "check_ALAT / ASAT": { x: COL1_X, y: jauneY(4), label: "ALAT/ASAT", type: "check", section: "tube_jaune" },
-    "check_Albumine": { x: COL1_X, y: jauneY(5), label: "Albumine", type: "check", section: "tube_jaune" },
-    "check_Apo A / Apo B": { x: COL1_X, y: jauneY(6), label: "Apo A/B", type: "check", section: "tube_jaune" },
-    "check_B2 microglobuline": { x: COL1_X, y: jauneY(7), label: "B2 micro", type: "check", section: "tube_jaune" },
-    "check_Bicarbonates": { x: COL1_X, y: jauneY(8), label: "Bicarbonates", type: "check", section: "tube_jaune" },
-    "check_Bilan hepatique": { x: COL1_X, y: jauneY(9), label: "Bilan hép.", type: "check", section: "tube_jaune" },
-    "check_Bilan lipidique": { x: COL1_X, y: jauneY(10), label: "Bilan lip.", type: "check", section: "tube_jaune" },
-    "check_Bilirubine": { x: COL1_X, y: jauneY(11), label: "Bilirubine", type: "check", section: "tube_jaune" },
-    "check_CA 125": { x: COL1_X, y: jauneY(12), label: "CA 125", type: "check", section: "tube_jaune" },
-    "check_CA 153.3": { x: COL1_X, y: jauneY(13), label: "CA 153.3", type: "check", section: "tube_jaune" },
-    "check_CA 19.9": { x: COL1_X, y: jauneY(14), label: "CA 19.9", type: "check", section: "tube_jaune" },
-    "check_Calcium / Calcium corrige": { x: COL1_X, y: jauneY(15), label: "Calcium", type: "check", section: "tube_jaune" },
-    "check_CMV": { x: COL1_X, y: jauneY(16), label: "CMV", type: "check", section: "tube_jaune" },
+    // TUBE JAUNE Col 1
+    "check_ACE": c(COL1_X, jauneY(0), "ACE", "tube_jaune"),
+    "check_Acide urique": c(COL1_X, jauneY(1), "Acide urique", "tube_jaune"),
+    "check_AFP": c(COL1_X, jauneY(2), "AFP", "tube_jaune"),
+    "check_Ag HBS": c(COL1_X, jauneY(3), "Ag HBS", "tube_jaune"),
+    "check_ALAT / ASAT": c(COL1_X, jauneY(4), "ALAT/ASAT", "tube_jaune"),
+    "check_Albumine": c(COL1_X, jauneY(5), "Albumine", "tube_jaune"),
+    "check_Apo A / Apo B": c(COL1_X, jauneY(6), "Apo A/B", "tube_jaune"),
+    "check_B2 microglobuline": c(COL1_X, jauneY(7), "B2 micro", "tube_jaune"),
+    "check_Bicarbonates": c(COL1_X, jauneY(8), "Bicarbonates", "tube_jaune"),
+    "check_Bilan hepatique": c(COL1_X, jauneY(9), "Bilan hép.", "tube_jaune"),
+    "check_Bilan lipidique": c(COL1_X, jauneY(10), "Bilan lip.", "tube_jaune"),
+    "check_Bilirubine": c(COL1_X, jauneY(11), "Bilirubine", "tube_jaune"),
+    "check_CA 125": c(COL1_X, jauneY(12), "CA 125", "tube_jaune"),
+    "check_CA 153.3": c(COL1_X, jauneY(13), "CA 153.3", "tube_jaune"),
+    "check_CA 19.9": c(COL1_X, jauneY(14), "CA 19.9", "tube_jaune"),
+    "check_Calcium / Calcium corrige": c(COL1_X, jauneY(15), "Calcium", "tube_jaune"),
+    "check_CMV": c(COL1_X, jauneY(16), "CMV", "tube_jaune"),
 
-    // ---- TUBE JAUNE Col 2 ----
-    "check_Cholesterol / triglycerides": { x: COL2_X, y: jauneY(0), label: "Cholest/Trig", type: "check", section: "tube_jaune" },
-    "check_Coefficient de saturation": { x: COL2_X, y: jauneY(1), label: "Coeff sat.", type: "check", section: "tube_jaune" },
-    "check_Cortisol": { x: COL2_X, y: jauneY(2), label: "Cortisol", type: "check", section: "tube_jaune" },
-    "check_CPK": { x: COL2_X, y: jauneY(3), label: "CPK", type: "check", section: "tube_jaune" },
-    "check_Creatinine": { x: COL2_X, y: jauneY(4), label: "Créatinine", type: "check", section: "tube_jaune" },
-    "check_CRP / CRP us": { x: COL2_X, y: jauneY(5), label: "CRP", type: "check", section: "tube_jaune" },
-    "check_DHEAS": { x: COL2_X, y: jauneY(6), label: "DHEAS", type: "check", section: "tube_jaune" },
-    "check_DFG": { x: COL2_X, y: jauneY(7), label: "DFG", type: "check", section: "tube_jaune" },
-    "check_Estradiol": { x: COL2_X, y: jauneY(10), label: "Estradiol", type: "check", section: "tube_jaune" },
-    "check_Fer serique": { x: COL2_X, y: jauneY(11), label: "Fer sérique", type: "check", section: "tube_jaune" },
-    "check_Ferritine": { x: COL2_X, y: jauneY(12), label: "Ferritine", type: "check", section: "tube_jaune" },
-    "check_Folates seriques": { x: COL2_X, y: jauneY(13), label: "Folates", type: "check", section: "tube_jaune" },
-    "check_Fructosamine": { x: COL2_X, y: jauneY(15), label: "Fructosamine", type: "check", section: "tube_jaune" },
-    "check_GGT": { x: COL2_X, y: jauneY(16), label: "GGT", type: "check", section: "tube_jaune" },
+    // TUBE JAUNE Col 2
+    "check_Cholesterol / triglycerides": c(COL2_X, jauneY(0), "Cholest/Trig", "tube_jaune"),
+    "check_Coefficient de saturation": c(COL2_X, jauneY(1), "Coeff sat.", "tube_jaune"),
+    "check_Cortisol": c(COL2_X, jauneY(2), "Cortisol", "tube_jaune"),
+    "check_CPK": c(COL2_X, jauneY(3), "CPK", "tube_jaune"),
+    "check_Creatinine": c(COL2_X, jauneY(4), "Créatinine", "tube_jaune"),
+    "check_CRP / CRP us": c(COL2_X, jauneY(5), "CRP", "tube_jaune"),
+    "check_DHEAS": c(COL2_X, jauneY(6), "DHEAS", "tube_jaune"),
+    "check_DFG": c(COL2_X, jauneY(7), "DFG", "tube_jaune"),
+    "check_Estradiol": c(COL2_X, jauneY(10), "Estradiol", "tube_jaune"),
+    "check_Fer serique": c(COL2_X, jauneY(11), "Fer sérique", "tube_jaune"),
+    "check_Ferritine": c(COL2_X, jauneY(12), "Ferritine", "tube_jaune"),
+    "check_Folates seriques": c(COL2_X, jauneY(13), "Folates", "tube_jaune"),
+    "check_Fructosamine": c(COL2_X, jauneY(15), "Fructosamine", "tube_jaune"),
+    "check_GGT": c(COL2_X, jauneY(16), "GGT", "tube_jaune"),
 
-    // ---- TUBE JAUNE Col 3 ----
-    "check_Hepatite A / B / C": { x: COL3_X, y: jauneY(0), label: "Hépatite ABC", type: "check", section: "tube_jaune" },
-    "check_HIV": { x: COL3_X, y: jauneY(1), label: "HIV", type: "check", section: "tube_jaune" },
-    "check_HTLV": { x: COL3_X, y: jauneY(2), label: "HTLV", type: "check", section: "tube_jaune" },
-    "check_IgA / IgG / IgM / IgE totales": { x: COL3_X, y: jauneY(3), label: "Ig totales", type: "check", section: "tube_jaune" },
-    "check_Ionogramme complet": { x: COL3_X, y: jauneY(4), label: "Ionogramme", type: "check", section: "tube_jaune" },
-    "check_LDH": { x: COL3_X, y: jauneY(6), label: "LDH", type: "check", section: "tube_jaune" },
-    "check_Lipase": { x: COL3_X, y: jauneY(7), label: "Lipase", type: "check", section: "tube_jaune" },
-    "check_Magnesium": { x: COL3_X, y: jauneY(8), label: "Magnésium", type: "check", section: "tube_jaune" },
-    "check_Na / K / Cl": { x: COL3_X, y: jauneY(9), label: "Na/K/Cl", type: "check", section: "tube_jaune" },
-    "check_PAL": { x: COL3_X, y: jauneY(10), label: "PAL", type: "check", section: "tube_jaune" },
-    "check_Phosphore": { x: COL3_X, y: jauneY(11), label: "Phosphore", type: "check", section: "tube_jaune" },
-    "check_Prealbumine": { x: COL3_X, y: jauneY(12), label: "Préalbumine", type: "check", section: "tube_jaune" },
-    "check_Progesterone": { x: COL3_X, y: jauneY(13), label: "Progestérone", type: "check", section: "tube_jaune" },
-    "check_Prolactine": { x: COL3_X, y: jauneY(14), label: "Prolactine", type: "check", section: "tube_jaune" },
-    "check_Protides": { x: COL3_X, y: jauneY(15), label: "Protides", type: "check", section: "tube_jaune" },
+    // TUBE JAUNE Col 3
+    "check_Hepatite A / B / C": c(COL3_X, jauneY(0), "Hépatite ABC", "tube_jaune"),
+    "check_HIV": c(COL3_X, jauneY(1), "HIV", "tube_jaune"),
+    "check_HTLV": c(COL3_X, jauneY(2), "HTLV", "tube_jaune"),
+    "check_IgA / IgG / IgM / IgE totales": c(COL3_X, jauneY(3), "Ig totales", "tube_jaune"),
+    "check_Ionogramme complet": c(COL3_X, jauneY(4), "Ionogramme", "tube_jaune"),
+    "check_LDH": c(COL3_X, jauneY(6), "LDH", "tube_jaune"),
+    "check_Lipase": c(COL3_X, jauneY(7), "Lipase", "tube_jaune"),
+    "check_Magnesium": c(COL3_X, jauneY(8), "Magnésium", "tube_jaune"),
+    "check_Na / K / Cl": c(COL3_X, jauneY(9), "Na/K/Cl", "tube_jaune"),
+    "check_PAL": c(COL3_X, jauneY(10), "PAL", "tube_jaune"),
+    "check_Phosphore": c(COL3_X, jauneY(11), "Phosphore", "tube_jaune"),
+    "check_Prealbumine": c(COL3_X, jauneY(12), "Préalbumine", "tube_jaune"),
+    "check_Progesterone": c(COL3_X, jauneY(13), "Progestérone", "tube_jaune"),
+    "check_Prolactine": c(COL3_X, jauneY(14), "Prolactine", "tube_jaune"),
+    "check_Protides": c(COL3_X, jauneY(15), "Protides", "tube_jaune"),
 
-    // ---- TUBE JAUNE Col 4 ----
-    "check_PSA / PSA LIBRE": { x: COL4_X, y: jauneY(0), label: "PSA", type: "check", section: "tube_jaune" },
-    "check_PTH": { x: COL4_X, y: jauneY(1), label: "PTH", type: "check", section: "tube_jaune" },
-    "check_Rubeole": { x: COL4_X, y: jauneY(2), label: "Rubéole", type: "check", section: "tube_jaune" },
-    "check_Syphilis": { x: COL4_X, y: jauneY(3), label: "Syphilis", type: "check", section: "tube_jaune" },
-    "check_T3L / T4L": { x: COL4_X, y: jauneY(4), label: "T3L/T4L", type: "check", section: "tube_jaune" },
-    "check_Testosterone": { x: COL4_X, y: jauneY(5), label: "Testostérone", type: "check", section: "tube_jaune" },
-    "check_Toxoplasmose": { x: COL4_X, y: jauneY(6), label: "Toxoplasmose", type: "check", section: "tube_jaune" },
-    "check_TSH": { x: COL4_X, y: jauneY(7), label: "TSH", type: "check", section: "tube_jaune" },
-    "check_Uree": { x: COL4_X, y: jauneY(8), label: "Urée", type: "check", section: "tube_jaune" },
-    "check_Vit B12": { x: COL4_X, y: jauneY(9), label: "Vit B12", type: "check", section: "tube_jaune" },
-    "check_Vit D": { x: COL4_X, y: jauneY(10), label: "Vit D", type: "check", section: "tube_jaune" },
+    // TUBE JAUNE Col 4
+    "check_PSA / PSA LIBRE": c(COL4_X, jauneY(0), "PSA", "tube_jaune"),
+    "check_PTH": c(COL4_X, jauneY(1), "PTH", "tube_jaune"),
+    "check_Rubeole": c(COL4_X, jauneY(2), "Rubéole", "tube_jaune"),
+    "check_Syphilis": c(COL4_X, jauneY(3), "Syphilis", "tube_jaune"),
+    "check_T3L / T4L": c(COL4_X, jauneY(4), "T3L/T4L", "tube_jaune"),
+    "check_Testosterone": c(COL4_X, jauneY(5), "Testostérone", "tube_jaune"),
+    "check_Toxoplasmose": c(COL4_X, jauneY(6), "Toxoplasmose", "tube_jaune"),
+    "check_TSH": c(COL4_X, jauneY(7), "TSH", "tube_jaune"),
+    "check_Uree": c(COL4_X, jauneY(8), "Urée", "tube_jaune"),
+    "check_Vit B12": c(COL4_X, jauneY(9), "Vit B12", "tube_jaune"),
+    "check_Vit D": c(COL4_X, jauneY(10), "Vit D", "tube_jaune"),
 
-    // ---- CARDIAQUES ----
-    "check_NTproBNP": { x: 18, y: 590, label: "NTproBNP", type: "check", section: "cardiaques" },
-    "check_Troponine": { x: 88, y: 590, label: "Troponine", type: "check", section: "cardiaques" },
-    "check_Electrophorese des protides / Immunotypage": { x: 20, y: 608, label: "Electrophorèse prot.", type: "check", section: "cardiaques" },
+    // CARDIAQUES
+    "check_NTproBNP": c(18, 590, "NTproBNP", "cardiaques"),
+    "check_Troponine": c(88, 590, "Troponine", "cardiaques"),
+    "check_Electrophorese des protides / Immunotypage": c(20, 608, "Electrophorèse prot.", "cardiaques"),
 
-    // ---- RHUMATO ----
-    "check_ENA / AAN / ACADN": { x: 18, y: 635, label: "ENA/AAN/ACADN", type: "check", section: "rhumato" },
-    "check_Facteurs rhumatoides": { x: 160, y: 635, label: "Fact. rhumatoïdes", type: "check", section: "rhumato" },
+    // RHUMATO
+    "check_ENA / AAN / ACADN": c(18, 635, "ENA/AAN/ACADN", "rhumato"),
+    "check_Facteurs rhumatoides": c(160, 635, "Fact. rhumatoïdes", "rhumato"),
 
-    // ---- SEROLOGIES ----
-    "check_Serologie H.Pylori": { x: 22, y: 675, label: "Séro. H.Pylori", type: "check", section: "serologies" },
-    "check_Serologie C.trachomatis IgG": { x: 22, y: 675, label: "Séro. C.trachomatis", type: "check", section: "serologies" },
-    "check_Procalcitonie": { x: 320, y: 675, label: "Procalcitonie", type: "check", section: "serologies" },
+    // SEROLOGIES
+    "check_Serologie H.Pylori": c(22, 675, "Séro. H.Pylori", "serologies"),
+    "check_Serologie C.trachomatis IgG": c(22, 675, "Séro. C.trachomatis", "serologies"),
+    "check_Procalcitonie": c(320, 675, "Procalcitonie", "serologies"),
 
-    // ---- CHLORDECONE ----
-    "check_Chlordecone": { x: 20, y: 692, label: "Chlordécone", type: "check", section: "chlordecone" },
+    // CHLORDECONE
+    "check_Chlordecone": c(20, 692, "Chlordécone", "chlordecone"),
 
-    // ---- TUBE VERT ----
-    "check_Bicarbonates / Reserve alcaline": { x: 465, y: 692, label: "Bicarb/Rés. alc.", type: "check", section: "tube_vert" },
+    // TUBE VERT
+    "check_Bicarbonates / Reserve alcaline": c(465, 692, "Bicarb/Rés. alc.", "tube_vert"),
 
-    // ---- TUBE VIOLET ----
-    "check_NFS": { x: 18, y: 730, label: "NFS", type: "check", section: "tube_violet" },
-    "check_VS": { x: 58, y: 730, label: "VS", type: "check", section: "tube_violet" },
-    "check_Reticulocytes": { x: 103, y: 730, label: "Réticulocytes", type: "check", section: "tube_violet" },
-    "check_BNP": { x: 218, y: 730, label: "BNP", type: "check", section: "tube_violet" },
-    "check_HbA1C": { x: 398, y: 730, label: "HbA1C", type: "check", section: "tube_violet" },
-    "check_Plaquettes": { x: 18, y: 742, label: "Plaquettes", type: "check", section: "tube_violet" },
-    "check_Electrophorese HB": { x: 20, y: 755, label: "Electrophorèse HB", type: "check", section: "tube_violet" },
-    "check_RAI": { x: 18, y: 787, label: "RAI", type: "check", section: "tube_violet" },
-    "check_Groupe sanguin": { x: 185, y: 787, label: "Groupe sanguin", type: "check", section: "tube_violet" },
+    // TUBE VIOLET
+    "check_NFS": c(18, 730, "NFS", "tube_violet"),
+    "check_VS": c(58, 730, "VS", "tube_violet"),
+    "check_Reticulocytes": c(103, 730, "Réticulocytes", "tube_violet"),
+    "check_BNP": c(218, 730, "BNP", "tube_violet"),
+    "check_HbA1C": c(398, 730, "HbA1C", "tube_violet"),
+    "check_Plaquettes": c(18, 742, "Plaquettes", "tube_violet"),
+    "check_Electrophorese HB": c(20, 755, "Electrophorèse HB", "tube_violet"),
+    "check_RAI": c(18, 787, "RAI", "tube_violet"),
+    "check_Groupe sanguin": c(185, 787, "Groupe sanguin", "tube_violet"),
 
-    // ---- TUBE GRIS ----
-    "check_Glycemie a Jeun": { x: 490, y: 730, label: "Glycémie à jeun", type: "check", section: "tube_gris" },
-    "check_GPP": { x: 490, y: 742, label: "GPP", type: "check", section: "tube_gris" },
+    // TUBE GRIS
+    "check_Glycemie a Jeun": c(490, 730, "Glycémie à jeun", "tube_gris"),
+    "check_GPP": c(490, 742, "GPP", "tube_gris"),
   };
 }
 
@@ -210,25 +219,55 @@ export const CALIBRATION_SECTIONS = [
 let _calibration: CalibrationMap = getDefaultCalibration();
 let _listeners: Array<() => void> = [];
 
+function _notify() {
+  _listeners.forEach((fn) => fn());
+}
+
 export function getCalibration(): CalibrationMap {
   return _calibration;
 }
 
 export function setCalibration(cal: CalibrationMap) {
   _calibration = { ...cal };
-  _listeners.forEach((fn) => fn());
+  _notify();
 }
 
 export function updateFieldCoord(key: string, x: number, y: number) {
   if (_calibration[key]) {
     _calibration = { ..._calibration, [key]: { ..._calibration[key], x, y } };
-    _listeners.forEach((fn) => fn());
+    _notify();
   }
+}
+
+export function updateFieldProp(key: string, prop: keyof FieldCoord, value: number | string) {
+  if (_calibration[key]) {
+    _calibration = { ..._calibration, [key]: { ..._calibration[key], [prop]: value } };
+    _notify();
+  }
+}
+
+export function renameField(key: string, newLabel: string) {
+  if (_calibration[key]) {
+    _calibration = { ..._calibration, [key]: { ..._calibration[key], label: newLabel } };
+    _notify();
+  }
+}
+
+export function addField(key: string, field: FieldCoord) {
+  _calibration = { ..._calibration, [key]: field };
+  _notify();
+}
+
+export function deleteField(key: string) {
+  const next = { ..._calibration };
+  delete next[key];
+  _calibration = next;
+  _notify();
 }
 
 export function resetCalibration() {
   _calibration = getDefaultCalibration();
-  _listeners.forEach((fn) => fn());
+  _notify();
 }
 
 export function subscribeCalibration(fn: () => void) {
@@ -247,12 +286,14 @@ export function exportCalibrationJSON(): string {
 export function importCalibrationJSON(json: string): boolean {
   try {
     const parsed = JSON.parse(json);
-    // Validate shape: every value must have x, y, label, type, section
     for (const key of Object.keys(parsed)) {
       const v = parsed[key];
       if (typeof v.x !== "number" || typeof v.y !== "number" || !v.label || !v.type || !v.section) {
         return false;
       }
+      // Backfill new fields for old JSON exports
+      if (typeof v.fontSize !== "number") v.fontSize = 8;
+      if (typeof v.wordSpacing !== "number") v.wordSpacing = 0;
     }
     setCalibration(parsed);
     return true;
@@ -261,8 +302,61 @@ export function importCalibrationJSON(json: string): boolean {
   }
 }
 
+// ---- Supabase persistence ----
+
+const SUPABASE_TABLE = "calibration_defaults";
+
+/**
+ * Save the current calibration as the user's default in Supabase.
+ * Uses upsert on user_id so there's only one row per user.
+ */
+export async function saveCalibrationToSupabase(userId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from(SUPABASE_TABLE)
+      .upsert(
+        { user_id: userId, calibration_data: _calibration, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+    if (error) {
+      console.error("Supabase save error:", error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Supabase save error:", err);
+    return false;
+  }
+}
+
+/**
+ * Load the user's default calibration from Supabase.
+ * Returns true if a saved calibration was found and loaded.
+ */
+export async function loadCalibrationFromSupabase(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE)
+      .select("calibration_data")
+      .eq("user_id", userId)
+      .single();
+    if (error || !data?.calibration_data) {
+      return false;
+    }
+    // Backfill new fields
+    const cal = data.calibration_data as CalibrationMap;
+    for (const key of Object.keys(cal)) {
+      if (typeof cal[key].fontSize !== "number") cal[key].fontSize = 8;
+      if (typeof cal[key].wordSpacing !== "number") cal[key].wordSpacing = 0;
+    }
+    setCalibration(cal);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ---- React hook ----
-import { useState as useReactState, useEffect as useReactEffect, useSyncExternalStore } from "react";
 
 export function useCalibration(): CalibrationMap {
   return useSyncExternalStore(subscribeCalibration, getCalibration);

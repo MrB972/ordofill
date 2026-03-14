@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -13,6 +13,13 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  Plus,
+  Trash2,
+  Pencil,
+  Save,
+  Loader2,
+  Type,
+  Space,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +27,36 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 import {
   useCalibration,
   getCalibration,
   updateFieldCoord,
+  updateFieldProp,
+  renameField,
+  addField,
+  deleteField,
   resetCalibration,
   exportCalibrationJSON,
   importCalibrationJSON,
+  saveCalibrationToSupabase,
+  loadCalibrationFromSupabase,
   CALIBRATION_SECTIONS,
   type CalibrationMap,
   type FieldCoord,
@@ -40,6 +69,7 @@ const PDF_H = 841.89;
 
 export default function CalibrationPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const calibration = useCalibration();
 
   // Zoom
@@ -59,10 +89,33 @@ export default function CalibrationPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   // Mobile panel
   const [showSidePanel, setShowSidePanel] = useState(true);
+  // Saving state
+  const [isSaving, setIsSaving] = useState(false);
+  // Editing field label inline
+  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null);
+  const [editingLabelValue, setEditingLabelValue] = useState("");
+  // Add field dialog
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldType, setNewFieldType] = useState<"text" | "check">("text");
+  const [newFieldSection, setNewFieldSection] = useState("header");
+  // Expanded detail row
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   // Pre-rendered image of the blank form (converted at build time from PDF → JPG at 300 DPI)
-  // Much more reliable than runtime pdf.js rendering
   const pdfImageUrl = "/fiche-labo-vierge.jpg";
+
+  // Auto-load calibration from Supabase on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadCalibrationFromSupabase(user.id).then((loaded) => {
+        if (loaded) {
+          toast({ title: "Calibration chargée", description: "Vos réglages par défaut ont été restaurés" });
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Zoom controls
   const zoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
@@ -113,7 +166,6 @@ export default function CalibrationPage() {
       const localY = e.clientY - rect.top + containerRef.current.scrollTop - offsetY - dragOffset.y;
       const pdfX = Math.round((localX / displayW) * PDF_W * 10) / 10;
       const pdfY = Math.round((localY / displayH) * PDF_H * 10) / 10;
-      // Clamp
       const clampedX = Math.max(0, Math.min(PDF_W, pdfX));
       const clampedY = Math.max(0, Math.min(PDF_H, pdfY));
       updateFieldCoord(dragging, clampedX, clampedY);
@@ -132,6 +184,56 @@ export default function CalibrationPage() {
     const field = calibration[key];
     if (!field) return;
     updateFieldCoord(key, axis === "x" ? num : field.x, axis === "y" ? num : field.y);
+  };
+
+  // ---- Inline rename ----
+  const startRename = (key: string, currentLabel: string) => {
+    setEditingLabelKey(key);
+    setEditingLabelValue(currentLabel);
+  };
+  const confirmRename = () => {
+    if (editingLabelKey && editingLabelValue.trim()) {
+      renameField(editingLabelKey, editingLabelValue.trim());
+    }
+    setEditingLabelKey(null);
+    setEditingLabelValue("");
+  };
+
+  // ---- Add field ----
+  const handleAddField = () => {
+    if (!newFieldLabel.trim()) return;
+    // Generate a unique key
+    const prefix = newFieldType === "check" ? "check_" : "text_";
+    const slug = newFieldLabel.trim().replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]/g, "");
+    let key = `${prefix}${slug}`;
+    // Ensure uniqueness
+    let counter = 1;
+    while (calibration[key]) {
+      key = `${prefix}${slug}_${counter}`;
+      counter++;
+    }
+    const newField: FieldCoord = {
+      x: 100,
+      y: 100,
+      label: newFieldLabel.trim(),
+      type: newFieldType,
+      section: newFieldSection,
+      fontSize: 8,
+      wordSpacing: 0,
+    };
+    addField(key, newField);
+    setShowAddDialog(false);
+    setNewFieldLabel("");
+    setSelectedKey(key);
+    toast({ title: "Champ ajouté", description: `"${newFieldLabel.trim()}" ajouté dans la section` });
+  };
+
+  // ---- Delete field ----
+  const handleDeleteField = (key: string, label: string) => {
+    deleteField(key);
+    if (selectedKey === key) setSelectedKey(null);
+    if (expandedKey === key) setExpandedKey(null);
+    toast({ title: "Champ supprimé", description: `"${label}" a été retiré` });
   };
 
   // Export
@@ -172,6 +274,25 @@ export default function CalibrationPage() {
   const handleReset = () => {
     resetCalibration();
     toast({ title: "Réinitialisation", description: "Coordonnées remises aux valeurs par défaut" });
+  };
+
+  // Save to Supabase
+  const handleSaveDefault = async () => {
+    if (!user?.id) {
+      toast({ title: "Erreur", description: "Vous devez être connecté", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const success = await saveCalibrationToSupabase(user.id);
+      if (success) {
+        toast({ title: "Sauvegardé", description: "Calibration enregistrée par défaut" });
+      } else {
+        toast({ title: "Erreur", description: "Impossible de sauvegarder", variant: "destructive" });
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Test PDF
@@ -228,6 +349,11 @@ export default function CalibrationPage() {
     return CALIBRATION_SECTIONS.find((s) => s.id === sectionId)?.color ?? "#888";
   };
 
+  // Toggle expanded detail for a field row
+  const toggleExpanded = (key: string) => {
+    setExpandedKey((prev) => (prev === key ? null : key));
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="calibration-page">
       {/* Header */}
@@ -244,6 +370,17 @@ export default function CalibrationPage() {
         </div>
 
         <div className="ml-auto flex gap-1.5 flex-wrap">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSaveDefault}
+            disabled={isSaving}
+            className="text-xs gap-1 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white hover:opacity-90"
+            data-testid="save-default"
+          >
+            {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            <span className="hidden sm:inline">Enregistrer par défaut</span>
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowMarkers(!showMarkers)} className="text-xs gap-1" data-testid="toggle-markers">
             {showMarkers ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
             <span className="hidden sm:inline">{showMarkers ? "Masquer" : "Afficher"}</span>
@@ -368,8 +505,8 @@ export default function CalibrationPage() {
           </div>
         </div>
 
-        {/* Side panel: coordinates list */}
-        <div className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[320px] sm:min-w-[280px] border-l bg-background`}>
+        {/* Side panel: coordinates + controls */}
+        <div className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[340px] sm:min-w-[300px] border-l bg-background`}>
           <ScrollArea className="h-full">
             <div className="p-3 space-y-2">
               {/* Section filter chips */}
@@ -394,6 +531,18 @@ export default function CalibrationPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Add field button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs gap-1.5 border-dashed"
+                onClick={() => setShowAddDialog(true)}
+                data-testid="add-field-btn"
+              >
+                <Plus className="size-3.5" />
+                Ajouter un champ
+              </Button>
 
               {/* Grouped fields */}
               {CALIBRATION_SECTIONS.filter(
@@ -429,42 +578,138 @@ export default function CalibrationPage() {
                     </button>
 
                     {!isCollapsed && (
-                      <div className="px-2 pb-2 space-y-1">
+                      <div className="px-2 pb-2 space-y-0.5">
                         {sectionFields.map(([key, field]) => {
                           const isSelected = selectedKey === key;
+                          const isExpanded = expandedKey === key;
+                          const isRenaming = editingLabelKey === key;
+
                           return (
-                            <div
-                              key={key}
-                              className={`flex items-center gap-1.5 p-1.5 rounded text-xs cursor-pointer transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted/50"}`}
-                              onClick={() => setSelectedKey(key)}
-                              data-testid={`coord-row-${key}`}
-                            >
+                            <div key={key} data-testid={`coord-row-${key}`}>
+                              {/* Main row */}
                               <div
-                                className="w-1.5 h-1.5 rounded-full shrink-0"
-                                style={{ backgroundColor: sec.color }}
-                              />
-                              <span className="flex-1 truncate text-[11px]">{field.label}</span>
-                              <span className="text-muted-foreground text-[10px] shrink-0">
-                                {field.type === "check" ? "☑" : "T"}
-                              </span>
-                              <input
-                                type="number"
-                                value={Math.round(field.x * 10) / 10}
-                                onChange={(e) => handleCoordChange(key, "x", e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-14 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
-                                step="0.5"
-                                data-testid={`coord-x-${key}`}
-                              />
-                              <input
-                                type="number"
-                                value={Math.round(field.y * 10) / 10}
-                                onChange={(e) => handleCoordChange(key, "y", e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-14 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
-                                step="0.5"
-                                data-testid={`coord-y-${key}`}
-                              />
+                                className={`flex items-center gap-1 p-1.5 rounded text-xs cursor-pointer transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted/50"}`}
+                                onClick={() => {
+                                  setSelectedKey(key);
+                                  toggleExpanded(key);
+                                }}
+                              >
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: sec.color }}
+                                />
+
+                                {/* Label: inline rename or display */}
+                                {isRenaming ? (
+                                  <input
+                                    autoFocus
+                                    className="flex-1 bg-muted/70 border rounded px-1 py-0.5 text-[11px] min-w-0"
+                                    value={editingLabelValue}
+                                    onChange={(e) => setEditingLabelValue(e.target.value)}
+                                    onBlur={confirmRename}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") confirmRename();
+                                      if (e.key === "Escape") { setEditingLabelKey(null); setEditingLabelValue(""); }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    data-testid={`rename-input-${key}`}
+                                  />
+                                ) : (
+                                  <span className="flex-1 truncate text-[11px]">{field.label}</span>
+                                )}
+
+                                <span className="text-muted-foreground text-[10px] shrink-0">
+                                  {field.type === "check" ? "☑" : "T"}
+                                </span>
+
+                                {/* Coords */}
+                                <input
+                                  type="number"
+                                  value={Math.round(field.x * 10) / 10}
+                                  onChange={(e) => handleCoordChange(key, "x", e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-12 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
+                                  step="0.5"
+                                  data-testid={`coord-x-${key}`}
+                                />
+                                <input
+                                  type="number"
+                                  value={Math.round(field.y * 10) / 10}
+                                  onChange={(e) => handleCoordChange(key, "y", e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-12 h-5 text-[10px] text-right bg-muted/50 border rounded px-1 tabular-nums"
+                                  step="0.5"
+                                  data-testid={`coord-y-${key}`}
+                                />
+
+                                {/* Action buttons */}
+                                <button
+                                  className="p-0.5 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => { e.stopPropagation(); startRename(key, field.label); }}
+                                  title="Renommer"
+                                  data-testid={`rename-btn-${key}`}
+                                >
+                                  <Pencil className="size-3" />
+                                </button>
+                                <button
+                                  className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteField(key, field.label); }}
+                                  title="Supprimer"
+                                  data-testid={`delete-btn-${key}`}
+                                >
+                                  <Trash2 className="size-3" />
+                                </button>
+                              </div>
+
+                              {/* Expanded detail: fontSize + wordSpacing */}
+                              {isExpanded && (
+                                <div
+                                  className="ml-4 mr-1 mt-1 mb-2 p-2 rounded-md bg-muted/30 border space-y-2.5"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {/* Font size */}
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                        <Type className="size-3" />
+                                        <span>Taille police</span>
+                                      </div>
+                                      <span className="text-[10px] font-mono tabular-nums">{field.fontSize}pt</span>
+                                    </div>
+                                    <Slider
+                                      value={[field.fontSize]}
+                                      min={4}
+                                      max={16}
+                                      step={0.5}
+                                      onValueChange={([v]) => updateFieldProp(key, "fontSize", v)}
+                                      className="h-4"
+                                      data-testid={`fontsize-slider-${key}`}
+                                    />
+                                  </div>
+
+                                  {/* Word spacing — only for text fields */}
+                                  {field.type === "text" && (
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                          <span className="text-[10px]">↔</span>
+                                          <span>Espace entre mots</span>
+                                        </div>
+                                        <span className="text-[10px] font-mono tabular-nums">{field.wordSpacing}pt</span>
+                                      </div>
+                                      <Slider
+                                        value={[field.wordSpacing]}
+                                        min={0}
+                                        max={30}
+                                        step={0.5}
+                                        onValueChange={([v]) => updateFieldProp(key, "wordSpacing", v)}
+                                        className="h-4"
+                                        data-testid={`wordspacing-slider-${key}`}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -477,13 +722,69 @@ export default function CalibrationPage() {
               {/* Info */}
               <div className="text-[10px] text-muted-foreground pt-2 space-y-1">
                 <p>Glissez les marqueurs sur l'aperçu pour repositionner.</p>
-                <p>Ajustez finement avec les champs numériques (X, Y en points PDF).</p>
-                <p>Utilisez Exporter/Importer pour sauvegarder vos réglages.</p>
+                <p>Cliquez sur une ligne pour ajuster taille de police et espace entre les mots.</p>
+                <p>Utilisez "Enregistrer par défaut" pour sauvegarder vos réglages.</p>
               </div>
             </div>
           </ScrollArea>
         </div>
       </div>
+
+      {/* Add Field Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Ajouter un champ</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nom du champ</Label>
+              <Input
+                value={newFieldLabel}
+                onChange={(e) => setNewFieldLabel(e.target.value)}
+                placeholder="Ex: Commentaires"
+                className="text-sm"
+                data-testid="new-field-label"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Type</Label>
+              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check")}>
+                <SelectTrigger className="text-sm" data-testid="new-field-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Texte (T)</SelectItem>
+                  <SelectItem value="check">Case à cocher (☑)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Section</Label>
+              <Select value={newFieldSection} onValueChange={setNewFieldSection}>
+                <SelectTrigger className="text-sm" data-testid="new-field-section">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CALIBRATION_SECTIONS.map((sec) => (
+                    <SelectItem key={sec.id} value={sec.id}>
+                      {sec.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setShowAddDialog(false)}>
+              Annuler
+            </Button>
+            <Button size="sm" onClick={handleAddField} disabled={!newFieldLabel.trim()} data-testid="confirm-add-field">
+              Ajouter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
