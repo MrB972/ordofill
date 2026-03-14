@@ -431,7 +431,7 @@ export default function FicheLaboPage() {
 
   const totalAnalyses = selectedAnalyses.size;
 
-  const handleGeneratePDF = () => {
+  const handleGeneratePDF = async () => {
     // Build analyses by section
     const analysesBySection = TUBE_SECTIONS
       .map((s) => ({
@@ -441,36 +441,45 @@ export default function FicheLaboPage() {
       }))
       .filter((s) => s.analyses.length > 0);
 
-    generateCerballiancePDF({
-      ideName: user?.fullName ?? "",
-      idePhone: user?.phone ?? "",
-      ideCabinet: user?.cabinetName ?? "",
-      ideRpps: user?.numeroRpps ?? "",
-      ideAdeli: user?.numeroAdeli ?? "",
-      nomUsuel,
-      prenoms,
-      dateNaissance,
-      sexe,
-      adresse,
-      telephone,
-      numSecu,
-      medecinTraitant,
-      datePrelevement,
-      heurePrelevement,
-      grossesse,
-      fievre,
-      traitements,
-      urgent,
-      anticoagulant: selectedAnticoagulant,
-      posologie,
-      inrCible,
-      analysesBySection,
-    });
+    try {
+      await generateCerballiancePDF({
+        ideName: user?.fullName ?? "",
+        idePhone: user?.phone ?? "",
+        ideCabinet: user?.cabinetName ?? "",
+        ideRpps: user?.numeroRpps ?? "",
+        ideAdeli: user?.numeroAdeli ?? "",
+        nomUsuel,
+        prenoms,
+        dateNaissance,
+        sexe,
+        adresse,
+        telephone,
+        numSecu,
+        medecinTraitant,
+        datePrelevement,
+        heurePrelevement,
+        grossesse,
+        fievre,
+        traitements,
+        urgent,
+        anticoagulant: selectedAnticoagulant,
+        posologie,
+        inrCible,
+        analysesBySection,
+      });
 
-    toast({
-      title: "PDF genere",
-      description: `Fiche Cerballiance pour ${formatName(nomUsuel, prenoms)} — ${totalAnalyses} analyse(s)`,
-    });
+      toast({
+        title: "PDF genere",
+        description: `Fiche Cerballiance pour ${formatName(nomUsuel, prenoms)} — ${totalAnalyses} analyse(s)`,
+      });
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast({
+        title: "Erreur",
+        description: "Impossible de generer le PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   // --- Patient selector card ---
