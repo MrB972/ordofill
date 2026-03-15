@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Moon, Sun, Bell } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useTheme } from "@/components/theme-provider";
@@ -54,14 +54,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 ) : (
                   <Moon className="size-4" />
                 )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                data-testid="notifications"
-              >
-                <Bell className="size-4" />
               </Button>
               <Avatar className="size-8">
                 <AvatarFallback className="avatar-gradient text-xs font-semibold">

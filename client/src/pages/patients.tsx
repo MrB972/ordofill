@@ -99,7 +99,7 @@ export default function PatientsPage() {
   const [ocMedecin, setOcMedecin] = useState("");
   const [ocNotes, setOcNotes] = useState("");
   const [syncing, setSyncing] = useState(false);
-  const [viewSource, setViewSource] = useState<"ordofill" | "ordocal">("ordofill");
+  const [viewSource, setViewSource] = useState<"ordofill" | "ordocal">("ordocal");
 
   // Form state
   const [firstName, setFirstName] = useState("");
