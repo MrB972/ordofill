@@ -902,25 +902,25 @@ export default function PatientsPage() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Nom</Label>
-                        <Input value={ocNom} onChange={(e) => setOcNom(e.target.value)} data-testid="oc-nom" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Prenom</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Prenom</Label>
                         <Input value={ocPrenom} onChange={(e) => setOcPrenom(e.target.value)} data-testid="oc-prenom" />
                       </div>
+                      <div className="space-y-2">
+                        <Label>Nom</Label>
+                        <Input value={ocNom} onChange={(e) => setOcNom(e.target.value)} data-testid="oc-nom" />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Date de naissance</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Date de naissance</Label>
                         <Input type="date" value={ocDateNaissance} onChange={(e) => setOcDateNaissance(e.target.value)} data-testid="oc-dob" />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Genre</Label>
+                      <div className="space-y-2">
+                        <Label>Genre</Label>
                         <Select value={ocGenre} onValueChange={setOcGenre}>
-                          <SelectTrigger data-testid="oc-genre"><SelectValue placeholder="---" /></SelectTrigger>
+                          <SelectTrigger data-testid="oc-genre"><SelectValue placeholder="Selectionner" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="M">Masculin</SelectItem>
                             <SelectItem value="F">Feminin</SelectItem>
@@ -928,30 +928,30 @@ export default function PatientsPage() {
                         </Select>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">N. Securite Sociale</Label>
+                    <div className="space-y-2">
+                      <Label>N. Securite Sociale</Label>
                       <Input value={ocNumSecu} onChange={(e) => setOcNumSecu(e.target.value)} data-testid="oc-ssn" />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Telephone</Label>
+                    <div className="space-y-2">
+                      <Label>Telephone</Label>
                       <Input value={ocTelephone} onChange={(e) => setOcTelephone(e.target.value)} data-testid="oc-tel" />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Adresse</Label>
+                    <div className="space-y-2">
+                      <Label>Adresse</Label>
                       <Input value={ocAdresse} onChange={(e) => setOcAdresse(e.target.value)} data-testid="oc-adresse" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Ville</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Ville</Label>
                         <Input value={ocVille} onChange={(e) => setOcVille(e.target.value)} data-testid="oc-ville" />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Code postal</Label>
+                      <div className="space-y-2">
+                        <Label>Code postal</Label>
                         <Input value={ocCodePostal} onChange={(e) => setOcCodePostal(e.target.value)} data-testid="oc-cp" />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Medecin traitant</Label>
+                    <div className="space-y-2">
+                      <Label>Medecin traitant</Label>
                       <Input value={ocMedecin} onChange={(e) => setOcMedecin(e.target.value)} data-testid="oc-medecin" />
                     </div>
                     <div className="flex gap-2 pt-2">
