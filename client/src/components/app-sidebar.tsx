@@ -4,6 +4,7 @@ import {
   FileText,
   Users,
   PenTool,
+  Clock,
   Settings,
 } from "lucide-react";
 import {
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/formulaires", label: "Formulaires", icon: FileText },
   { href: "/patients", label: "Patients", icon: Users },
   { href: "/remplissage", label: "Nouveau Remplissage", icon: PenTool },
+  { href: "/historique", label: "Historique", icon: Clock },
   { href: "/parametres", label: "Paramètres", icon: Settings },
 ];
 
