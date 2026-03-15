@@ -49,6 +49,11 @@ function c(x: number, y: number, label: string, section: string): FieldCoord {
   return { x, y, label, type: "check", section, fontSize: 8, wordSpacing: 0 };
 }
 
+/** Helper: create a combo field (checkbox + text) */
+function combo(x: number, y: number, label: string, section: string, order: ComboOrder = "check_text"): FieldCoord {
+  return { x, y, label, type: "combo", section, fontSize: 8, wordSpacing: 0, comboOrder: order };
+}
+
 export function getDefaultCalibration(): CalibrationMap {
   return {
     // ============ TEXT FIELDS ============
@@ -198,7 +203,7 @@ export function getDefaultCalibration(): CalibrationMap {
 
     // RHUMATO
     "check_ENA / AAN / ACADN": c(18, 635, "ENA/AAN/ACADN", "rhumato"),
-    "check_Facteurs rhumatoides": c(160, 635, "Fact. rhumatoïdes", "rhumato"),
+    "check_Facteurs rhumatoides": c(160, 635, "Facteurs rhumatoïdes / Latex Waaler-Rose", "rhumato"),
 
     // SEROLOGIES
     "check_Serologie H.Pylori": c(22, 675, "Séro. H.Pylori", "serologies"),
@@ -225,15 +230,169 @@ export function getDefaultCalibration(): CalibrationMap {
     // TUBE GRIS
     "check_Glycemie a Jeun": c(490, 730, "Glycémie à jeun", "tube_gris"),
     "check_GPP": c(490, 742, "GPP", "tube_gris"),
+    "text_GPP_heure": t(530, 742, "GPP Préciser heure", "tube_gris"),
+    "check_GPP_apres_dejeuner": c(490, 754, "Après déjeuner", "tube_gris"),
+    "check_GPP_apres_petit_dejeuner": c(540, 754, "Après petit déjeuner", "tube_gris"),
+
+    // ============ PAGE 1 ENRICHMENTS ============
+
+    // Patient enrichment
+    "text_nomNaissanceVal": t(510, 168, "Nom de naissance (valeur)", "patient"),
+    "text_lieuNaissance": t(430, 195, "Lieu de naissance", "patient"),
+    "text_etablissementSoins": t(310, 237, "Établissement de soins", "patient"),
+    "text_demandeEtiquettes": t(490, 237, "Demande d'étiquettes", "patient"),
+
+    // Clinique enrichment — Pathologie connue (combo: checkbox + text)
+    "combo_pathologieConnue": combo(130, 280, "Pathologie connue", "clinique"),
+
+    // Clinique enrichment — Renseignements cliniques détaillés (Page 1)
+    "check_chimiotherapie": c(170, 283, "Chimiothérapie", "clinique"),
+    "check_antibiotherapie": c(270, 283, "Antibiothérapie", "clinique"),
+    "check_dialyse": c(370, 283, "Dialyse", "clinique"),
+    "check_suiviHemopathie": c(420, 283, "Suivi hémopathie", "clinique"),
+    "check_traitementEPO": c(508, 283, "Traitement EPO", "clinique"),
+    "check_injectionRhophylac": c(18, 297, "Injection récente Rhophylac", "clinique"),
+    "text_cliniqueRhophylacDate": t(160, 297, "Rhophylac Date", "clinique"),
+    "check_transfusion4mois": c(280, 297, "Transfusion < 4 mois", "clinique"),
+    "text_cliniqueMedicamentsDateHeure": t(155, 311, "Médicaments date/heure dernière prise", "clinique"),
+    "text_cliniqueDateDernieresRegles": t(380, 311, "Date dernières règles", "clinique"),
+    "text_cliniqueAutres": t(50, 325, "Autres", "clinique"),
+
+    // Prélèvement enrichment
+    "check_sansGarrot": c(15, 300, "Sans garrot", "prelevement_p1"),
+    "check_veinesDifficiles": c(100, 300, "Veines difficiles", "prelevement_p1"),
+    "text_prelevementAutres": t(200, 300, "Autres", "prelevement_p1"),
+    "text_nbTubes": t(350, 300, "Nb tubes", "prelevement_p1"),
+
+    // ============ PAGE 2 FIELDS ============
+
+    // RENSEIGNEMENTS CLINIQUES URINAIRES (p2)
+    "text_p2_antibio": t(190, 50, "Antibiothérapie en cours ou < 7 jours", "p2_rc_urinaires"),
+    "check_p2_chimiotherapie": c(380, 50, "Chimiothérapie", "p2_rc_urinaires"),
+    "check_p2_fievreUrines": c(15, 65, "Fièvre et/ou frissons", "p2_rc_urinaires"),
+    "check_p2_grossesseUrines": c(150, 65, "Grossesse en cours", "p2_rc_urinaires"),
+    "text_p2_autreRcUrinaire": t(310, 65, "Autre", "p2_rc_urinaires"),
+
+    // BIOCHIMIE URINAIRE (p2)
+    "check_p2_24h": c(15, 100, "24h", "p2_biochimie_urinaire"),
+    "text_p2_24h_dateDebut": t(100, 100, "Date et heure début", "p2_biochimie_urinaire"),
+    "text_p2_24h_dateFin": t(280, 100, "Date et heure fin", "p2_biochimie_urinaire"),
+    "text_p2_diurese": t(440, 100, "Diurèse", "p2_biochimie_urinaire"),
+    "check_p2_echantillon": c(540, 100, "Échantillon", "p2_biochimie_urinaire"),
+    "check_p2_proteinurie": c(15, 118, "Protéinurie", "p2_biochimie_urinaire"),
+    "check_p2_glycosurie": c(15, 130, "Glycosurie", "p2_biochimie_urinaire"),
+    "check_p2_microAlbuminurie": c(15, 142, "µ albuminurie", "p2_biochimie_urinaire"),
+    "check_p2_ionoUrinaire": c(180, 118, "Iono", "p2_biochimie_urinaire"),
+    "check_p2_ureeUrinaire": c(180, 130, "Urée", "p2_biochimie_urinaire"),
+    "check_p2_acUriqueUrinaire": c(280, 118, "Ac. urique", "p2_biochimie_urinaire"),
+    "check_p2_creatinineUrinaire": c(280, 130, "Créatinine", "p2_biochimie_urinaire"),
+    "check_p2_calciumUrinaire": c(420, 118, "Calcium", "p2_biochimie_urinaire"),
+    "check_p2_phosphoreUrinaire": c(420, 130, "Phosphore", "p2_biochimie_urinaire"),
+    "combo_p2_biochimieAutre": combo(15, 155, "Autre (biochimie urinaire)", "p2_biochimie_urinaire"),
+
+    // ECBU (p2)
+    "text_p2_ecbu_date": t(40, 185, "Date ECBU", "p2_ecbu"),
+    "text_p2_ecbu_heure": t(130, 185, "Heure ECBU", "p2_ecbu"),
+    "check_p2_2emeJet": c(15, 202, "2ème jet urines", "p2_ecbu"),
+    "combo_p2_surSonde": combo(130, 202, "Sur sonde à demeure (type)", "p2_ecbu"),
+    "check_p2_apresChangementSonde": c(15, 215, "Après changement d'une sonde à demeure", "p2_ecbu"),
+    "check_p2_sondage": c(300, 215, "Sondage", "p2_ecbu"),
+    "check_p2_collecteurBebe": c(380, 215, "Collecteur (bébé)", "p2_ecbu"),
+    "check_p2_collecteurPenien": c(470, 215, "Collecteur pénien", "p2_ecbu"),
+    "text_p2_ecbuAutre": t(550, 215, "Autre", "p2_ecbu"),
+
+    // RENSEIGNEMENTS CLINIQUES ECBU (p2)
+    "check_p2_fievreEcbu": c(15, 248, "Fièvre et/ou frissons", "p2_rc_ecbu"),
+    "check_p2_douleursPubiennes": c(15, 260, "Douleurs sus pubiennes", "p2_rc_ecbu"),
+    "check_p2_brulure": c(15, 272, "Brûlure", "p2_rc_ecbu"),
+    "check_p2_douleursMictionnelles": c(160, 248, "Douleurs mictionnelles", "p2_rc_ecbu"),
+    "check_p2_pollakiurie": c(160, 260, "Pollakiurie", "p2_rc_ecbu"),
+    "check_p2_ecoulement": c(160, 272, "Écoulement", "p2_rc_ecbu"),
+    "check_p2_douleursLombaires": c(310, 248, "Douleurs lombaires", "p2_rc_ecbu"),
+    "check_p2_hematurieMacro": c(310, 260, "Hématurie macroscopique", "p2_rc_ecbu"),
+    "text_p2_autreMotifEcbu": t(310, 272, "Autre motif", "p2_rc_ecbu"),
+    "check_p2_mictionsImperieuses": c(440, 248, "Mictions impérieuses", "p2_rc_ecbu"),
+    "check_p2_absenceSignes": c(440, 260, "Absence de signes urinaires", "p2_rc_ecbu"),
+    "check_p2_dysurie": c(540, 260, "Dysurie", "p2_rc_ecbu"),
+
+    // ÉTAT PHYSIOLOGIQUE (p2)
+    "check_p2_grossesseEtat": c(15, 320, "Grossesse en cours", "p2_etat_physio"),
+    "check_p2_bilanPreop": c(150, 320, "Bilan préopératoire", "p2_etat_physio"),
+    "check_p2_chimiotherapieEtat": c(280, 320, "Chimiothérapie", "p2_etat_physio"),
+    "check_p2_greffe": c(380, 320, "Greffe", "p2_etat_physio"),
+    "check_p2_dialyse": c(440, 320, "Dialysé(e)", "p2_etat_physio"),
+    "check_p2_hospiRecente": c(15, 335, "Hospitalisation récente, vie en institution", "p2_etat_physio"),
+    "check_p2_antibio7j": c(15, 348, "Prise d'antibiotiques dans les 7 derniers jours", "p2_etat_physio"),
+    "text_p2_antibioLequel": t(350, 348, "Si oui lequel ?", "p2_etat_physio"),
+
+    // PLAIE / PUS (p2)
+    "text_p2_plaie_date": t(40, 390, "Date", "p2_plaie_pus"),
+    "text_p2_plaie_heure": t(130, 390, "Heure", "p2_plaie_pus"),
+    "text_p2_plaie_aspect": t(250, 390, "Aspect", "p2_plaie_pus"),
+    "text_p2_plaie_localisation": t(420, 390, "Localisation", "p2_plaie_pus"),
+    "text_p2_plaie_contexte": t(100, 405, "Contexte clinique", "p2_plaie_pus"),
+
+    // SELLES (p2)
+    "check_p2_coproculture": c(140, 445, "Coproculture", "p2_selles"),
+    "check_p2_parasitologie": c(280, 445, "Parasitologie", "p2_selles"),
+    "check_p2_sangSelles": c(420, 445, "Sang dans les selles", "p2_selles"),
+    "text_p2_selles_date": t(40, 462, "Date", "p2_selles"),
+    "text_p2_selles_heure": t(130, 462, "Heure", "p2_selles"),
+    "check_p2_diarrhees": c(15, 478, "Diarrhées", "p2_selles"),
+    "check_p2_douleursIntestinales": c(100, 478, "Douleurs intestinales", "p2_selles"),
+    "check_p2_constipation": c(240, 478, "Épisodes de constipation", "p2_selles"),
+    "text_p2_sellesAutre": t(400, 478, "Autre", "p2_selles"),
+    "text_p2_voyageZone": t(200, 495, "Voyage récent en zone à risque", "p2_selles"),
+    "check_p2_medecineTravail": c(430, 495, "Médecine du travail", "p2_selles"),
+
+    // HÉMOCULTURES (p2)
+    "check_p2_H1": c(15, 535, "H-1", "p2_hemocultures"),
+    "check_p2_H2": c(60, 535, "H-2", "p2_hemocultures"),
+    "check_p2_H3": c(105, 535, "H-3", "p2_hemocultures"),
+    "check_p2_prelevPeripherique": c(250, 535, "Prélèvement périphérique", "p2_hemocultures"),
+    "check_p2_prelevCatheter": c(420, 535, "Prélèvement sur cathéter", "p2_hemocultures"),
+    "text_p2_hemo_date": t(40, 552, "Date", "p2_hemocultures"),
+    "text_p2_hemo_heure": t(130, 552, "Heure", "p2_hemocultures"),
+    "text_p2_fievreTemp": t(430, 552, "Fièvre T°", "p2_hemocultures"),
+    "check_p2_suspicionEndocardite": c(15, 568, "Suspicion d'endocardite", "p2_hemocultures"),
+
+    // AUTRES (p2)
+    "text_p2_autres_date": t(40, 608, "Date", "p2_autres"),
+    "text_p2_autres_heure": t(130, 608, "Heure", "p2_autres"),
+    "text_p2_autres_nature": t(250, 608, "Nature", "p2_autres"),
+    "text_p2_autres_localisation": t(420, 608, "Localisation", "p2_autres"),
+    "text_p2_autres_contexte": t(100, 625, "Contexte clinique", "p2_autres"),
+
+    // RÉCEPTION LABORATOIRE (p2)
+    "text_p2_secretaire": t(100, 660, "Secrétaire — Identité", "p2_reception"),
+    "text_p2_technicien": t(340, 660, "Technicien — Identité", "p2_reception"),
+    "text_p2_reception_date": t(340, 675, "Date", "p2_reception"),
+    "text_p2_reception_heure": t(480, 675, "Heure", "p2_reception"),
+
+    // NON-CONFORMITÉ (p2)
+    "check_p2_nc_identPrelevement": c(15, 710, "Identification prélèvement", "p2_non_conformite"),
+    "check_p2_nc_ordonnance": c(170, 710, "Ordonnance", "p2_non_conformite"),
+    "check_p2_nc_tubesTrop": c(300, 710, "Tubes en trop", "p2_non_conformite"),
+    "check_p2_nc_tubesManquants": c(390, 710, "Tubes manquants", "p2_non_conformite"),
+    "check_p2_nc_caillotHemolyse": c(490, 710, "Caillot, hémolyse, volume", "p2_non_conformite"),
+    "check_p2_nc_tubesPerimes": c(15, 725, "Tubes périmés", "p2_non_conformite"),
+    "check_p2_nc_identPatient": c(120, 725, "Identification patient", "p2_non_conformite"),
+    "check_p2_nc_prelevHeure": c(250, 725, "Prélèvement : préleveur-heure", "p2_non_conformite"),
+    "check_p2_nc_delai": c(430, 725, "DELAI", "p2_non_conformite"),
+    "check_p2_nc_delaiDerogation": c(490, 725, "DELAI + dérogation", "p2_non_conformite"),
+    "check_p2_nc_renseignementsCliniques": c(180, 740, "Renseignements cliniques", "p2_non_conformite"),
+    "text_p2_nc_autre": t(50, 740, "Autre", "p2_non_conformite"),
   };
 }
 
 // ---- Sections for grouped display in the editor ----
 export const CALIBRATION_SECTIONS = [
+  // Page 1
   { id: "header", label: "En-tête", color: "#6366F1" },
   { id: "ide", label: "Préleveur (IDE)", color: "#06B6D4" },
   { id: "patient", label: "Patient", color: "#10B981" },
   { id: "clinique", label: "Renseignements cliniques", color: "#F59E0B" },
+  { id: "prelevement_p1", label: "Prélèvement (enrichi)", color: "#14B8A6" },
   { id: "anticoagulant", label: "Anticoagulant", color: "#EF4444" },
   { id: "tube_bleu", label: "Tube bleu", color: "#3B82F6" },
   { id: "tube_jaune", label: "Tube jaune 5mL", color: "#EAB308" },
@@ -244,7 +403,26 @@ export const CALIBRATION_SECTIONS = [
   { id: "tube_vert", label: "Tube vert", color: "#22C55E" },
   { id: "tube_violet", label: "Tube violet EDTA", color: "#8B5CF6" },
   { id: "tube_gris", label: "Tube gris", color: "#6B7280" },
+  // Page 2
+  { id: "p2_rc_urinaires", label: "P2 — Rens. cliniques urinaires", color: "#F59E0B" },
+  { id: "p2_biochimie_urinaire", label: "P2 — Biochimie urinaire", color: "#F97316" },
+  { id: "p2_ecbu", label: "P2 — ECBU", color: "#06B6D4" },
+  { id: "p2_rc_ecbu", label: "P2 — Rens. cliniques ECBU", color: "#EAB308" },
+  { id: "p2_etat_physio", label: "P2 — État physiologique", color: "#10B981" },
+  { id: "p2_plaie_pus", label: "P2 — Plaie / Pus", color: "#EF4444" },
+  { id: "p2_selles", label: "P2 — Selles", color: "#A855F7" },
+  { id: "p2_hemocultures", label: "P2 — Hémocultures", color: "#F43F5E" },
+  { id: "p2_autres", label: "P2 — Autres", color: "#6B7280" },
+  { id: "p2_reception", label: "P2 — Réception laboratoire", color: "#3B82F6" },
+  { id: "p2_non_conformite", label: "P2 — Non-conformité", color: "#DC2626" },
 ];
+
+/** Set of section IDs that belong to Page 2 of the PDF */
+export const PAGE2_SECTIONS = new Set([
+  "p2_rc_urinaires", "p2_biochimie_urinaire", "p2_ecbu", "p2_rc_ecbu",
+  "p2_etat_physio", "p2_plaie_pus", "p2_selles", "p2_hemocultures",
+  "p2_autres", "p2_reception", "p2_non_conformite",
+]);
 
 // ---- In-memory store (singleton) ----
 let _calibration: CalibrationMap = getDefaultCalibration();

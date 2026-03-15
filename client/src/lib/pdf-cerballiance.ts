@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { getCalibration, type CalibrationMap, type FieldCoord } from "./calibration-store";
+import { getCalibration, PAGE2_SECTIONS, type CalibrationMap, type FieldCoord } from "./calibration-store";
 
 interface CerballiancePDFData {
   // IDE (nurse) info
@@ -84,20 +84,29 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
   const pdfDoc = await PDFDocument.load(formBytes);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const page = pdfDoc.getPages()[0];
+  const pages = pdfDoc.getPages();
+  const page = pages[0];
+  const page2 = pages.length > 1 ? pages[1] : page;
   const black = rgb(0, 0, 0);
 
+  /** Determine which page a calibration key belongs to based on its section. */
+  function getTargetPage(calKey: string) {
+    const entry = cal[calKey];
+    if (entry && entry.section && PAGE2_SECTIONS.has(entry.section)) return page2;
+    return page;
+  }
+
   /**
-   * Draw text at top-down coordinates.
+   * Draw text at top-down coordinates on a given page.
    * If wordSpacing > 0, splits the string on word separators (space, /, -, .)
    * and adds extra spacing between the resulting tokens.
    */
-  function textDraw(str: string, x: number, topY: number, size: number, bold: boolean, wordSpacing: number) {
+  function textDraw(str: string, x: number, topY: number, size: number, bold: boolean, wordSpacing: number, targetPage = page) {
     if (!str) return;
 
     if (wordSpacing <= 0) {
       // Normal draw — no extra spacing
-      page.drawText(str, {
+      targetPage.drawText(str, {
         x,
         y: Y(topY),
         size,
@@ -114,7 +123,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
 
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
-      page.drawText(token, {
+      targetPage.drawText(token, {
         x: curX,
         y: Y(topY),
         size,
@@ -131,17 +140,18 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
     }
   }
 
-  /** Shorthand text draw using calibration key for size and wordSpacing */
+  /** Shorthand text draw using calibration key for size, wordSpacing, and target page */
   function text(str: string, calKey: string, x: number, topY: number, defaultSize = FS, bold = false) {
     const size = getFontSize(cal, calKey, defaultSize);
     const ws = getWordSpacing(cal, calKey);
-    textDraw(str, x, topY, size, bold, ws);
+    textDraw(str, x, topY, size, bold, ws, getTargetPage(calKey));
   }
 
   // Helper: draw an X in a checkbox at top-down coordinates
   function check(x: number, topY: number, calKey?: string) {
     const size = calKey ? getFontSize(cal, calKey, 8) : 8;
-    page.drawText("X", {
+    const target = calKey ? getTargetPage(calKey) : page;
+    target.drawText("X", {
       x: x + 1,
       y: Y(topY) - 1,
       size,
@@ -373,17 +383,18 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
         const ws = getWordSpacing(cal, key);
         const usedFont = font;
         const xBoldFont = fontBold;
+        const targetPage = getTargetPage(key);
 
         if (order === "check_text") {
           // X first, then text
           let curX = entry.x;
           if (isChecked) {
-            page.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
+            targetPage.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
           }
           const xWidth = xBoldFont.widthOfTextAtSize("X", size);
           curX += xWidth + (ws > 0 ? ws : 4); // use wordSpacing or 4pt gap
           if (textValue) {
-            textDraw(textValue, curX, entry.y, size, false, ws);
+            textDraw(textValue, curX, entry.y, size, false, ws, targetPage);
           }
         } else {
           // Text first, then X
@@ -396,11 +407,11 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
               textWidth += usedFont.widthOfTextAtSize(tokens[i], size);
               if (ws > 0 && i < tokens.length - 1) textWidth += ws;
             }
-            textDraw(textValue, curX, entry.y, size, false, ws);
+            textDraw(textValue, curX, entry.y, size, false, ws, targetPage);
             curX += textWidth + (ws > 0 ? ws : 4);
           }
           if (isChecked) {
-            page.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
+            targetPage.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
           }
         }
       } else if (entry.type === "check") {
