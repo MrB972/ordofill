@@ -57,6 +57,7 @@ import {
   saveCalibrationToSupabase,
   loadCalibrationFromSupabase,
   CALIBRATION_SECTIONS,
+  PAGE2_SECTIONS,
   type CalibrationMap,
   type FieldCoord,
   type ComboOrder,
@@ -112,9 +113,11 @@ export default function CalibrationPage() {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   // Ref for side panel scroll viewport (for auto-scroll on marker click)
   const sidePanelRef = useRef<HTMLDivElement>(null);
+  // Page toggle (page 1 or page 2)
+  const [calibrationPage, setCalibrationPage] = useState<1 | 2>(1);
 
   // Pre-rendered image of the blank form (converted at build time from PDF → JPG at 300 DPI)
-  const pdfImageUrl = "/fiche-labo-vierge.jpg";
+  const pdfImageUrl = calibrationPage === 1 ? "/fiche-labo-vierge.jpg" : "/fiche-labo-vierge-p2.jpg";
 
   // Auto-load calibration from Supabase on mount
   useEffect(() => {
@@ -132,12 +135,16 @@ export default function CalibrationPage() {
   const zoomIn = () => setZoom((z) => Math.min(z + 0.25, 4));
   const zoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
 
-  // Filter fields by active section
+  // Filter fields by active section AND current page
   const visibleFields = useMemo(() => {
     const entries = Object.entries(calibration);
-    if (!activeSection) return entries;
-    return entries.filter(([_, field]) => field.section === activeSection);
-  }, [calibration, activeSection]);
+    // Filter by page: page 1 = sections NOT in PAGE2_SECTIONS, page 2 = sections IN PAGE2_SECTIONS
+    const pageFiltered = entries.filter(([_, field]) =>
+      calibrationPage === 1 ? !PAGE2_SECTIONS.has(field.section) : PAGE2_SECTIONS.has(field.section)
+    );
+    if (!activeSection) return pageFiltered;
+    return pageFiltered.filter(([_, field]) => field.section === activeSection);
+  }, [calibration, activeSection, calibrationPage]);
 
   // Handle mouse/touch start on a marker
   const handlePointerDown = useCallback(
@@ -396,7 +403,7 @@ export default function CalibrationPage() {
   };
 
   return (
-    <div className="h-full flex flex-col" data-testid="calibration-page">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 3.5rem)' }} data-testid="calibration-page">
       {/* Header */}
       <div className="p-3 border-b glass-strong flex items-center gap-2 flex-wrap">
         <Link href="/fiche-labo">
@@ -443,6 +450,22 @@ export default function CalibrationPage() {
           <Button variant="ghost" size="sm" onClick={zoomIn} className="text-xs" data-testid="zoom-in">
             <ZoomIn className="size-4" />
           </Button>
+          <div className="flex rounded-md border overflow-hidden">
+            <button
+              className={`text-[10px] px-2.5 py-1 transition-colors ${calibrationPage === 1 ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              onClick={() => { setCalibrationPage(1); setActiveSection(null); }}
+              data-testid="page-toggle-1"
+            >
+              Page 1
+            </button>
+            <button
+              className={`text-[10px] px-2.5 py-1 border-l transition-colors ${calibrationPage === 2 ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              onClick={() => { setCalibrationPage(2); setActiveSection(null); }}
+              data-testid="page-toggle-2"
+            >
+              Page 2
+            </button>
+          </div>
           <Button variant="outline" size="sm" onClick={handleTestPDF} className="text-xs gap-1" data-testid="test-pdf">
             <Check className="size-3.5" />
             <span className="hidden sm:inline">Tester PDF</span>
@@ -499,9 +522,11 @@ export default function CalibrationPage() {
               draggable={false}
             />
 
-            {/* Preview mode: render actual text data on the PDF */}
+            {/* Preview mode: render actual text data on the PDF (filtered by current page) */}
             {previewMode &&
-              Object.entries(calibration).map(([key, field]) => {
+              Object.entries(calibration).filter(([_, f]) =>
+                calibrationPage === 1 ? !PAGE2_SECTIONS.has(f.section) : PAGE2_SECTIONS.has(f.section)
+              ).map(([key, field]) => {
                 // For check fields: always show "X" in preview so positions can be calibrated
                 // For text fields: use real form data or fall back to label
                 // For combo fields: show "X" + text (or text + "X") with spacing
@@ -637,8 +662,8 @@ export default function CalibrationPage() {
         </div>
 
         {/* Side panel: coordinates + controls */}
-        <div ref={sidePanelRef} className={`${showSidePanel ? "block" : "hidden sm:block"} w-full sm:w-[400px] sm:min-w-[360px] sm:max-w-[400px] overflow-hidden border-l bg-background`}>
-          <div className="h-full overflow-y-auto overflow-x-hidden">
+        <div ref={sidePanelRef} className={`${showSidePanel ? "flex flex-col" : "hidden sm:flex sm:flex-col"} w-full sm:w-[400px] sm:min-w-[360px] sm:max-w-[400px] overflow-hidden border-l bg-background h-full`}>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
             <div className="p-3 space-y-2">
               {/* Section filter chips */}
               <div className="flex flex-wrap gap-1 mb-3">
@@ -648,7 +673,9 @@ export default function CalibrationPage() {
                 >
                   Tout
                 </button>
-                {CALIBRATION_SECTIONS.map((sec) => (
+                {CALIBRATION_SECTIONS.filter((sec) =>
+                  calibrationPage === 1 ? !PAGE2_SECTIONS.has(sec.id) : PAGE2_SECTIONS.has(sec.id)
+                ).map((sec) => (
                   <button
                     key={sec.id}
                     className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${activeSection === sec.id ? "text-white" : "hover:bg-muted"}`}
@@ -677,7 +704,7 @@ export default function CalibrationPage() {
 
               {/* Grouped fields */}
               {CALIBRATION_SECTIONS.filter(
-                (sec) => !activeSection || activeSection === sec.id
+                (sec) => (calibrationPage === 1 ? !PAGE2_SECTIONS.has(sec.id) : PAGE2_SECTIONS.has(sec.id)) && (!activeSection || activeSection === sec.id)
               ).map((sec) => {
                 const sectionFields = Object.entries(calibration).filter(
                   ([_, f]) => f.section === sec.id

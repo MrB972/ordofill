@@ -267,7 +267,10 @@ export default function FicheLaboPage() {
   const [sansGarrot, setSansGarrot] = useState(false);
   const [veinesDifficiles, setVeinesDifficiles] = useState(false);
   const [prelevementAutres, setPrelevementAutres] = useState("");
-  const [nbTubes, setNbTubes] = useState("");
+  const [nbTubesBleu, setNbTubesBleu] = useState("");
+  const [nbTubesJaune, setNbTubesJaune] = useState("");
+  const [nbTubesViolet, setNbTubesViolet] = useState("");
+  const [nbTubesGris, setNbTubesGris] = useState("");
 
   // Tube Gris GPP enrichment
   const [gppHeure, setGppHeure] = useState("");
@@ -585,7 +588,10 @@ export default function FicheLaboPage() {
         text_cliniqueDateDernieresRegles: cliniqueDateDernieresRegles,
         text_cliniqueAutres: cliniqueAutres,
         text_prelevementAutres: prelevementAutres,
-        text_nbTubes: nbTubes,
+        text_nbTubesBleu: nbTubesBleu,
+        text_nbTubesJaune: nbTubesJaune,
+        text_nbTubesViolet: nbTubesViolet,
+        text_nbTubesGris: nbTubesGris,
         text_GPP_heure: gppHeure,
         // Page 2 text values
         text_p2_antibio: p2_antibio,
@@ -639,7 +645,7 @@ export default function FicheLaboPage() {
     cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie,
     cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate,
     cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres,
-    sansGarrot, veinesDifficiles, prelevementAutres, nbTubes,
+    sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris,
     gppHeure, gppApresDejeuner, gppApresPetitDejeuner,
     // Page 2
     p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire,
@@ -798,7 +804,7 @@ export default function FicheLaboPage() {
     cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie,
     cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate,
     cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres,
-    sansGarrot, veinesDifficiles, prelevementAutres, nbTubes,
+    sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris,
     gppHeure, gppApresDejeuner, gppApresPetitDejeuner,
     // Page 2
     p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire,
@@ -823,7 +829,7 @@ export default function FicheLaboPage() {
     p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants,
     p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure,
     p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues, nomNaissanceVal, lieuNaissance, etablissementSoins, demandeEtiquettes, pathologieConnue, pathologieConnueTexte, cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie, cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate, cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres, sansGarrot, veinesDifficiles, prelevementAutres, nbTubes, gppHeure, gppApresDejeuner, gppApresPetitDejeuner, p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire, p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon, p2_proteinurie, p2_glycosurie, p2_microAlbuminurie, p2_ionoUrinaire, p2_ureeUrinaire, p2_acUriqueUrinaire, p2_creatinineUrinaire, p2_calciumUrinaire, p2_phosphoreUrinaire, p2_biochimieAutre, p2_biochimieAutreTexte, p2_ecbu_date, p2_ecbu_heure, p2_2emeJet, p2_surSonde, p2_surSondeType, p2_apresChangementSonde, p2_sondage, p2_collecteurBebe, p2_collecteurPenien, p2_ecbuAutre, p2_fievreEcbu, p2_douleursPubiennes, p2_brulure, p2_douleursMictionnelles, p2_pollakiurie, p2_ecoulement, p2_douleursLombaires, p2_hematurieMacro, p2_autreMotifEcbu, p2_mictionsImperieuses, p2_absenceSignes, p2_dysurie, p2_grossesseEtat, p2_bilanPreop, p2_chimiotherapieEtat, p2_greffe, p2_dialyse, p2_hospiRecente, p2_antibio7j, p2_antibioLequel, p2_plaie_date, p2_plaie_heure, p2_plaie_aspect, p2_plaie_localisation, p2_plaie_contexte, p2_coproculture, p2_parasitologie, p2_sangSelles, p2_selles_date, p2_selles_heure, p2_diarrhees, p2_douleursIntestinales, p2_constipation, p2_sellesAutre, p2_voyageZone, p2_medecineTravail, p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter, p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite, p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte, p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure, p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants, p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure, p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre]);
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues, nomNaissanceVal, lieuNaissance, etablissementSoins, demandeEtiquettes, pathologieConnue, pathologieConnueTexte, cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie, cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate, cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres, sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris, gppHeure, gppApresDejeuner, gppApresPetitDejeuner, p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire, p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon, p2_proteinurie, p2_glycosurie, p2_microAlbuminurie, p2_ionoUrinaire, p2_ureeUrinaire, p2_acUriqueUrinaire, p2_creatinineUrinaire, p2_calciumUrinaire, p2_phosphoreUrinaire, p2_biochimieAutre, p2_biochimieAutreTexte, p2_ecbu_date, p2_ecbu_heure, p2_2emeJet, p2_surSonde, p2_surSondeType, p2_apresChangementSonde, p2_sondage, p2_collecteurBebe, p2_collecteurPenien, p2_ecbuAutre, p2_fievreEcbu, p2_douleursPubiennes, p2_brulure, p2_douleursMictionnelles, p2_pollakiurie, p2_ecoulement, p2_douleursLombaires, p2_hematurieMacro, p2_autreMotifEcbu, p2_mictionsImperieuses, p2_absenceSignes, p2_dysurie, p2_grossesseEtat, p2_bilanPreop, p2_chimiotherapieEtat, p2_greffe, p2_dialyse, p2_hospiRecente, p2_antibio7j, p2_antibioLequel, p2_plaie_date, p2_plaie_heure, p2_plaie_aspect, p2_plaie_localisation, p2_plaie_contexte, p2_coproculture, p2_parasitologie, p2_sangSelles, p2_selles_date, p2_selles_heure, p2_diarrhees, p2_douleursIntestinales, p2_constipation, p2_sellesAutre, p2_voyageZone, p2_medecineTravail, p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter, p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite, p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte, p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure, p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants, p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure, p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -919,7 +925,10 @@ export default function FicheLaboPage() {
     setSansGarrot(d.sansGarrot ?? false);
     setVeinesDifficiles(d.veinesDifficiles ?? false);
     setPrelevementAutres(d.prelevementAutres ?? "");
-    setNbTubes(d.nbTubes ?? "");
+    setNbTubesBleu(d.nbTubesBleu ?? d.nbTubes ?? "");
+    setNbTubesJaune(d.nbTubesJaune ?? "");
+    setNbTubesViolet(d.nbTubesViolet ?? "");
+    setNbTubesGris(d.nbTubesGris ?? "");
     setGppHeure(d.gppHeure ?? "");
     setGppApresDejeuner(d.gppApresDejeuner ?? false);
     setGppApresPetitDejeuner(d.gppApresPetitDejeuner ?? false);
@@ -1095,7 +1104,10 @@ export default function FicheLaboPage() {
     setSansGarrot(false);
     setVeinesDifficiles(false);
     setPrelevementAutres("");
-    setNbTubes("");
+    setNbTubesBleu("");
+    setNbTubesJaune("");
+    setNbTubesViolet("");
+    setNbTubesGris("");
     setGppHeure("");
     setGppApresDejeuner(false);
     setGppApresPetitDejeuner(false);
@@ -1303,7 +1315,10 @@ export default function FicheLaboPage() {
           check_sansGarrot: sansGarrot ? "true" : "",
           check_veinesDifficiles: veinesDifficiles ? "true" : "",
           text_prelevementAutres: prelevementAutres,
-          text_nbTubes: nbTubes,
+          text_nbTubesBleu: nbTubesBleu,
+          text_nbTubesJaune: nbTubesJaune,
+          text_nbTubesViolet: nbTubesViolet,
+          text_nbTubesGris: nbTubesGris,
           // GPP
           text_gppHeure: gppHeure,
           check_gppApresDejeuner: gppApresDejeuner ? "true" : "",
@@ -1859,14 +1874,29 @@ export default function FicheLaboPage() {
             Veines difficiles
           </label>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Autres (prélèvement)</Label>
-            <Input value={prelevementAutres} onChange={(e) => setPrelevementAutres(e.target.value)} placeholder="Préciser..." className="h-8 text-sm" data-testid="field-prelevement-autres" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Nb tubes</Label>
-            <Input value={nbTubes} onChange={(e) => setNbTubes(e.target.value)} placeholder="Nombre" className="h-8 text-sm" data-testid="field-nb-tubes" />
+        <div className="space-y-1">
+          <Label className="text-xs">Autres (prélèvement)</Label>
+          <Input value={prelevementAutres} onChange={(e) => setPrelevementAutres(e.target.value)} placeholder="Préciser..." className="h-8 text-sm" data-testid="field-prelevement-autres" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Nombre de tubes</Label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+              <Input type="number" min="0" value={nbTubesBleu} onChange={(e) => setNbTubesBleu(e.target.value)} placeholder="0" className="h-7 text-sm w-full" data-testid="field-nb-tubes-bleu" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+              <Input type="number" min="0" value={nbTubesJaune} onChange={(e) => setNbTubesJaune(e.target.value)} placeholder="0" className="h-7 text-sm w-full" data-testid="field-nb-tubes-jaune" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500 shrink-0" />
+              <Input type="number" min="0" value={nbTubesViolet} onChange={(e) => setNbTubesViolet(e.target.value)} placeholder="0" className="h-7 text-sm w-full" data-testid="field-nb-tubes-violet" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400 shrink-0" />
+              <Input type="number" min="0" value={nbTubesGris} onChange={(e) => setNbTubesGris(e.target.value)} placeholder="0" className="h-7 text-sm w-full" data-testid="field-nb-tubes-gris" />
+            </div>
           </div>
         </div>
         {/* Tube Gris GPP enrichment */}

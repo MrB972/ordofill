@@ -262,7 +262,10 @@ export function getDefaultCalibration(): CalibrationMap {
     "check_sansGarrot": c(15, 300, "Sans garrot", "prelevement_p1"),
     "check_veinesDifficiles": c(100, 300, "Veines difficiles", "prelevement_p1"),
     "text_prelevementAutres": t(200, 300, "Autres", "prelevement_p1"),
-    "text_nbTubes": t(350, 300, "Nb tubes", "prelevement_p1"),
+    "text_nbTubesBleu": t(365, 332, "Nb bleu", "prelevement_p1"),
+    "text_nbTubesJaune": t(420, 332, "Nb jaune", "prelevement_p1"),
+    "text_nbTubesViolet": t(475, 332, "Nb violet", "prelevement_p1"),
+    "text_nbTubesGris": t(530, 332, "Nb gris", "prelevement_p1"),
 
     // ============ PAGE 2 FIELDS ============
 

@@ -80,7 +80,10 @@ export interface FicheDraftData {
   sansGarrot?: boolean;
   veinesDifficiles?: boolean;
   prelevementAutres?: string;
-  nbTubes?: string;
+  nbTubesBleu?: string;
+  nbTubesJaune?: string;
+  nbTubesViolet?: string;
+  nbTubesGris?: string;
 
   // Tube Gris GPP enrichment
   gppHeure?: string;
