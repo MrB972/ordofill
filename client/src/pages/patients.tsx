@@ -827,7 +827,7 @@ export default function PatientsPage() {
       <Sheet open={!!detailOrdocal} onOpenChange={(open) => {
         if (!open) { setDetailOrdocal(null); setEditingOrdocal(false); }
       }}>
-        <SheetContent data-testid="ordocal-detail-sheet" className="overflow-y-auto">
+        <SheetContent data-testid="ordocal-detail-sheet" className="overflow-y-auto w-full sm:w-3/4 sm:max-w-sm">
           {detailOrdocal && (
             <>
               <SheetHeader>
