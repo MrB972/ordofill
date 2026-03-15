@@ -74,9 +74,9 @@ export default function RemplissagePage() {
 
   return (
     <div className="h-full flex flex-col" data-testid="remplissage-page">
-      <div className="p-4 border-b glass-strong flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 min-w-[200px]">
-          <Label className="text-sm whitespace-nowrap">Template:</Label>
+      <div className="p-3 sm:p-4 border-b glass-strong flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Label className="text-sm whitespace-nowrap shrink-0">Template:</Label>
           <Select
             value={selectedTemplateId}
             onValueChange={(val) => {
@@ -88,7 +88,7 @@ export default function RemplissagePage() {
               setSelectedTemplateId(val);
             }}
           >
-            <SelectTrigger data-testid="template-selector" className="w-[220px]">
+            <SelectTrigger data-testid="template-selector" className="flex-1 sm:w-[220px]">
               <SelectValue placeholder="Choisir un template" />
             </SelectTrigger>
             <SelectContent>
@@ -104,10 +104,10 @@ export default function RemplissagePage() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2 min-w-[200px]">
-          <Label className="text-sm whitespace-nowrap">Patient:</Label>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Label className="text-sm whitespace-nowrap shrink-0">Patient:</Label>
           <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-            <SelectTrigger data-testid="patient-selector" className="w-[220px]">
+            <SelectTrigger data-testid="patient-selector" className="flex-1 sm:w-[220px]">
               <SelectValue placeholder="Choisir un patient" />
             </SelectTrigger>
             <SelectContent>
@@ -122,7 +122,7 @@ export default function RemplissagePage() {
 
         <Button
           onClick={handleGenerate}
-          className="ml-auto bg-gradient-to-r from-primary to-accent text-white pulse-glow"
+          className="w-full sm:w-auto sm:ml-auto bg-gradient-to-r from-primary to-accent text-white pulse-glow"
           disabled={!selectedTemplateId}
           data-testid="generate-pdf-btn"
         >
@@ -131,17 +131,17 @@ export default function RemplissagePage() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 flex" data-testid="split-view">
-          <div className="w-[60%] min-w-[300px]">
+      <div className="flex-1 min-h-0 flex flex-col sm:flex-row" data-testid="split-view">
+          <div className="w-full sm:w-[60%]">
             <div className="h-full bg-muted/20 flex items-center justify-center relative p-4">
               {selectedTemplate ? (
                 <div
                   className="w-full max-w-[600px] aspect-[210/297] bg-white dark:bg-slate-900 rounded-lg shadow-lg relative border"
                   data-testid="document-viewer"
                 >
-                  <div className="absolute inset-0 p-8">
-                    <div className="text-center mb-6">
-                      <p className="text-lg font-bold text-foreground/80">
+                  <div className="absolute inset-0 p-4 sm:p-8">
+                    <div className="text-center mb-4 sm:mb-6">
+                      <p className="text-base sm:text-lg font-bold text-foreground/80">
                         {selectedTemplate.name}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -186,13 +186,13 @@ export default function RemplissagePage() {
             </div>
           </div>
 
-          <div className="w-px bg-border shrink-0" />
+          <div className="hidden sm:block w-px bg-border shrink-0" />
 
-          <div className="flex-1 min-w-[300px]">
+          <div className="flex-1">
             <ScrollArea className="h-full">
-              <div className="p-4 space-y-4" data-testid="form-panel">
+              <div className="p-3 sm:p-4 space-y-4" data-testid="form-panel">
                 {!selectedTemplate && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
+                  <p className="hidden sm:block text-sm text-muted-foreground text-center py-8">
                     Selectionnez un template a gauche
                   </p>
                 )}
