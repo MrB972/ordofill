@@ -18,6 +18,7 @@ import HistoriquePage from "@/pages/historique";
 import ParametresPage from "@/pages/parametres";
 import FicheLaboPage from "@/pages/fiche-labo";
 import CalibrationPage from "@/pages/calibration";
+import FormBuilderPage from "@/pages/form-builder";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
@@ -73,6 +74,9 @@ function AppRouter() {
       </Route>
       <Route path="/calibration">
         <ProtectedRoute component={CalibrationPage} />
+      </Route>
+      <Route path="/form-builder">
+        <ProtectedRoute component={FormBuilderPage} />
       </Route>
       <Route path="/">
         <Redirect to="/dashboard" />

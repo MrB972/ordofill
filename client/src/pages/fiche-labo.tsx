@@ -24,6 +24,7 @@ import {
   Type,
   CheckSquare,
   CopyCheck,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2506,6 +2507,17 @@ export default function FicheLaboPage() {
             <Save className="size-4 mr-1" />
             <span className="hidden sm:inline">Sauvegarder</span>
           </Button>
+          <Link href="/form-builder">
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="configurateur-btn"
+              className="text-xs"
+            >
+              <Settings2 className="size-4 mr-1" />
+              <span className="hidden sm:inline">Configurer</span>
+            </Button>
+          </Link>
           <Link href="/calibration">
             <Button
               variant="ghost"

@@ -6,6 +6,7 @@ import {
   PenTool,
   Clock,
   Settings,
+  Settings2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/formulaires", label: "Formulaires", icon: FileText },
   { href: "/patients", label: "Patients", icon: Users },
   { href: "/remplissage", label: "Nouveau Remplissage", icon: PenTool },
+  { href: "/form-builder", label: "Configurateur", icon: Settings2 },
   { href: "/historique", label: "Historique", icon: Clock },
   { href: "/parametres", label: "Paramètres", icon: Settings },
 ];
