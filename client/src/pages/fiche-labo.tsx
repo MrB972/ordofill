@@ -1287,8 +1287,8 @@ export default function FicheLaboPage() {
           resultats_patOppose: resPatOppose ? "true" : "",
           resultats_controle: controleDemande ? "true" : "",
           // Prescription
-          prescription_renouvelable: renouvelable ? "true" : "",
-          prescription_dateRenouvelable: dateRenouvelable,
+          check_renouvelable: renouvelable ? "true" : "",
+          text_dateRenouvelable: dateRenouvelable,
           // Pièce justificative
           piece_cni: pieceCni ? "true" : "",
           piece_passeport: piecePasseport ? "true" : "",
@@ -1299,8 +1299,9 @@ export default function FicheLaboPage() {
           text_etablissementSoins: etablissementSoins,
           text_demandeEtiquettes: demandeEtiquettes,
           // Page 1 enrichments — Clinique
-          check_pathologieConnue: pathologieConnue ? "true" : "",
-          text_pathologieConnueTexte: pathologieConnueTexte,
+          // combo_pathologieConnue: text is the value, :checked suffix for check
+          combo_pathologieConnue: pathologieConnueTexte,
+          "combo_pathologieConnue:checked": pathologieConnue ? "true" : "false",
           check_chimiotherapie: cliniqueChimiotherapie ? "true" : "",
           check_antibiotherapie: cliniqueAntibiotherapie ? "true" : "",
           check_dialyse: cliniqueDialyse ? "true" : "",
@@ -1321,9 +1322,9 @@ export default function FicheLaboPage() {
           text_nbTubesViolet: nbTubesViolet,
           text_nbTubesGris: nbTubesGris,
           // GPP
-          text_gppHeure: gppHeure,
-          check_gppApresDejeuner: gppApresDejeuner ? "true" : "",
-          check_gppApresPetitDejeuner: gppApresPetitDejeuner ? "true" : "",
+          text_GPP_heure: gppHeure,
+          check_GPP_apres_dejeuner: gppApresDejeuner ? "true" : "",
+          check_GPP_apres_petit_dejeuner: gppApresPetitDejeuner ? "true" : "",
           // Page 2 — RC urinaires
           text_p2_antibio: p2_antibio,
           check_p2_chimiotherapie: p2_chimiotherapie ? "true" : "",
@@ -1345,14 +1346,16 @@ export default function FicheLaboPage() {
           check_p2_creatinineUrinaire: p2_creatinineUrinaire ? "true" : "",
           check_p2_calciumUrinaire: p2_calciumUrinaire ? "true" : "",
           check_p2_phosphoreUrinaire: p2_phosphoreUrinaire ? "true" : "",
-          check_p2_biochimieAutre: p2_biochimieAutre ? "true" : "",
-          text_p2_biochimieAutreTexte: p2_biochimieAutreTexte,
+          // combo_p2_biochimieAutre: text is the value, :checked suffix for check
+          combo_p2_biochimieAutre: p2_biochimieAutreTexte,
+          "combo_p2_biochimieAutre:checked": p2_biochimieAutre ? "true" : "false",
           // Page 2 — ECBU
           text_p2_ecbu_date: p2_ecbu_date,
           text_p2_ecbu_heure: p2_ecbu_heure,
           check_p2_2emeJet: p2_2emeJet ? "true" : "",
-          check_p2_surSonde: p2_surSonde ? "true" : "",
-          text_p2_surSondeType: p2_surSondeType,
+          // combo_p2_surSonde: text is the type, :checked suffix for check
+          combo_p2_surSonde: p2_surSondeType,
+          "combo_p2_surSonde:checked": p2_surSonde ? "true" : "false",
           check_p2_apresChangementSonde: p2_apresChangementSonde ? "true" : "",
           check_p2_sondage: p2_sondage ? "true" : "",
           check_p2_collecteurBebe: p2_collecteurBebe ? "true" : "",

@@ -431,6 +431,37 @@ export const PAGE2_SECTIONS = new Set([
 let _calibration: CalibrationMap = getDefaultCalibration();
 let _listeners: Array<() => void> = [];
 
+// ---- Calibration-ready promise (resolves once Supabase load completes or times out) ----
+let _calibrationReady = false;
+let _resolveReady: (() => void) | null = null;
+const _readyPromise = new Promise<void>((resolve) => {
+  _resolveReady = resolve;
+});
+// Auto-resolve after 5s to prevent indefinite blocking
+setTimeout(() => {
+  if (!_calibrationReady) {
+    console.warn("[CalibrationStore] Timeout — using defaults");
+    _calibrationReady = true;
+    _resolveReady?.();
+  }
+}, 5000);
+
+function _markReady() {
+  if (!_calibrationReady) {
+    _calibrationReady = true;
+    _resolveReady?.();
+  }
+}
+
+/**
+ * Wait until calibration has been loaded from Supabase (or timeout).
+ * Call this before PDF generation to ensure calibration is available.
+ */
+export function waitForCalibration(): Promise<void> {
+  if (_calibrationReady) return Promise.resolve();
+  return _readyPromise;
+}
+
 function _notify() {
   _listeners.forEach((fn) => fn());
 }
@@ -547,12 +578,15 @@ export async function saveCalibrationToSupabase(userId: string): Promise<boolean
  */
 export async function loadCalibrationFromSupabase(userId: string): Promise<boolean> {
   try {
+    console.log(`[CalibrationStore] Loading calibration for user ${userId}...`);
     const { data, error } = await supabase
       .from(SUPABASE_TABLE)
       .select("calibration_data")
       .eq("user_id", userId)
       .single();
     if (error || !data?.calibration_data) {
+      console.warn("[CalibrationStore] No saved calibration found, using defaults", error?.message);
+      _markReady();
       return false;
     }
     // Backfill new fields
@@ -569,8 +603,15 @@ export async function loadCalibrationFromSupabase(userId: string): Promise<boole
       }
     }
     setCalibration(cal);
+    console.log(`[CalibrationStore] Calibration loaded: ${Object.keys(cal).length} fields`);
+    // Log a few key coords for debugging
+    const sample = cal["check_grossesse"];
+    if (sample) console.log(`[CalibrationStore] check_grossesse: x=${sample.x}, y=${sample.y}`);
+    _markReady();
     return true;
-  } catch {
+  } catch (err) {
+    console.error("[CalibrationStore] Load error:", err);
+    _markReady();
     return false;
   }
 }

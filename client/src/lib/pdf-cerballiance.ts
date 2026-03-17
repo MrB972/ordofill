@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { getCalibration, PAGE2_SECTIONS, type CalibrationMap, type FieldCoord } from "./calibration-store";
+import { getCalibration, waitForCalibration, PAGE2_SECTIONS, type CalibrationMap, type FieldCoord } from "./calibration-store";
 
 interface CerballiancePDFData {
   // IDE (nurse) info
@@ -74,9 +74,29 @@ function getWordSpacing(cal: CalibrationMap, key: string): number {
   return 0;
 }
 
+/**
+ * Convert yyyy-mm-dd to dd/mm/yyyy. Returns original string if not a date.
+ */
+function formatDateFR(value: string): string {
+  if (!value) return value;
+  if (value.includes("-")) {
+    const parts = value.split("-");
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+  }
+  return value;
+}
+
 export async function generateCerballiancePDF(data: CerballiancePDFData): Promise<void> {
+  // Ensure calibration has been loaded from Supabase before proceeding
+  await waitForCalibration();
+
   // Read current calibration
   const cal = getCalibration();
+  console.log(`[PDF] Generating with ${Object.keys(cal).length} calibration fields`);
+  const sample = cal["check_grossesse"];
+  if (sample) console.log(`[PDF] check_grossesse: x=${sample.x}, y=${sample.y}`);
 
   // Fetch the blank official form
   const formUrl = new URL("/fiche-labo-vierge.pdf", window.location.origin).href;
@@ -191,7 +211,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
   }
   {
     const [x, y] = coord(cal, "text_datePrelevement", 120, 195);
-    text(data.datePrelevement, "text_datePrelevement", x, y);
+    text(formatDateFR(data.datePrelevement), "text_datePrelevement", x, y);
   }
   {
     const [x, y] = coord(cal, "text_heurePrelevement", 130, 220);
@@ -231,14 +251,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
 
   // Né(e) le — date de naissance
   if (data.dateNaissance) {
-    const dn = data.dateNaissance;
-    let formatted = dn;
-    if (dn.includes("-")) {
-      const parts = dn.split("-");
-      if (parts.length === 3) {
-        formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-    }
+    const formatted = formatDateFR(data.dateNaissance);
     const [x, y] = coord(cal, "text_dateNaissance", 325, 195);
     text(formatted, "text_dateNaissance", x, y);
   }
@@ -348,11 +361,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
     }
     // Fin de droit
     if (data.finDeDroit) {
-      let formatted = data.finDeDroit;
-      if (formatted.includes("-")) {
-        const parts = formatted.split("-");
-        if (parts.length === 3) formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
+      const formatted = formatDateFR(data.finDeDroit);
       const [x, y] = coord(cal, "text_finDeDroit", 480, 225);
       text(formatted, "text_finDeDroit", x, y);
     }
@@ -420,8 +429,11 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
           check(entry.x, entry.y, key);
         }
       } else {
-        // Custom text field
-        if (value) text(value, key, entry.x, entry.y);
+        // Custom text field — auto-convert yyyy-mm-dd dates to dd/mm/yyyy
+        if (value) {
+          const formatted = formatDateFR(value);
+          text(formatted, key, entry.x, entry.y);
+        }
       }
     }
   }
@@ -434,7 +446,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `Cerballiance_${data.nomUsuel.toUpperCase()}_${data.prenoms}_${data.datePrelevement}.pdf`;
+  link.download = `Cerballiance_${data.nomUsuel.toUpperCase()}_${data.prenoms}_${formatDateFR(data.datePrelevement)}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
