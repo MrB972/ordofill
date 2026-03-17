@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Moon, Sun } from "lucide-react";
@@ -8,6 +8,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { loadCalibrationFromSupabase } from "@/lib/calibration-store";
 
 const pageTransition = {
   initial: { opacity: 0, y: 12 },
@@ -20,6 +21,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const [location] = useLocation();
+  const calibrationLoadedRef = useRef(false);
+
+  // Load user's saved calibration from Supabase on first mount
+  // This ensures the calibration is available for PDF generation on ALL pages,
+  // not just when visiting the calibration page.
+  useEffect(() => {
+    if (user?.id && !calibrationLoadedRef.current) {
+      calibrationLoadedRef.current = true;
+      loadCalibrationFromSupabase(user.id).then((loaded) => {
+        if (loaded) {
+          console.log("[AppLayout] Calibration chargée depuis Supabase");
+        }
+      });
+    }
+  }, [user?.id]);
 
   const initials = user?.fullName
     ? user.fullName
