@@ -168,24 +168,27 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
   }
 
   // Helper: draw an X in a checkbox at top-down coordinates.
-  // The calibration preview uses CSS transform: translate(-25%, -60%)
-  // so the calibrated (x,y) is at ~25% of X-width from left, ~60% of height from top.
-  // pdf-lib drawText anchors at baseline-left, so we must offset accordingly.
+  // The calibration preview uses CSS: left/top at (field.x, field.y) in PDF-pt space,
+  // then transform: translate(-25%, -60%) to visually position the X.
+  //
+  // CSS translate(-25%, -60%) shifts the element:
+  //   LEFT by 25% of element width (≈ charWidth)
+  //   UP by 60% of element height (= fontSize with lineHeight:1)
+  //
+  // The PDF drawText anchor is at (left_edge, baseline_bottomup).
+  // To match CSS visual positioning:
+  //   drawX = x - 0.25 * charWidth  (same as CSS leftward shift)
+  //   drawY = Y(topY) - 0.259 * size
+  //     (derived: visual_center_y matches CSS center = cal_y - 0.10*fontSize)
   function check(x: number, topY: number, calKey?: string) {
     const size = calKey ? getFontSize(cal, calKey, 8) : 8;
     const target = calKey ? getTargetPage(calKey) : page;
-    // Match CSS translate(-25%, -60%): shift left by 25% of char width, 
-    // and compute baseline from the 60%-from-top anchor point
     const charWidth = fontBold.widthOfTextAtSize("X", size);
-    const xOffset = -0.25 * charWidth;
-    // CSS: visual_top = y - 0.60*fontSize, baseline = visual_top + capHeight
-    // capHeight ≈ 0.718 * fontSize for Helvetica
-    // So baseline_top_down = y - 0.60*size + 0.718*size = y + 0.118*size
-    // pdf-lib baseline_y = PH - baseline_top_down = Y(y) - 0.118*size
-    const yOffset = -0.118 * size;
+    const drawX = x - 0.25 * charWidth;
+    const drawY = Y(topY) - 0.259 * size;
     target.drawText("X", {
-      x: x + xOffset,
-      y: Y(topY) + yOffset,
+      x: drawX,
+      y: drawY,
       size,
       font: fontBold,
       color: black,
