@@ -9,6 +9,7 @@ import {
   PenTool,
   CheckCircle2,
   ArrowRight,
+  ClipboardList,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,7 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
+        className="flex flex-wrap gap-3"
       >
         <Link href="/remplissage">
           <Button
@@ -158,6 +160,17 @@ export default function DashboardPage() {
             <PenTool className="size-5 mr-2" />
             Nouveau remplissage
             <ArrowRight className="size-5 ml-2" />
+          </Button>
+        </Link>
+        <Link href="/fiche-labo">
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-xl h-12 px-8 text-base font-semibold border-primary/30 hover:bg-primary/10 transition-colors"
+            data-testid="cta-fiche-labo"
+          >
+            <ClipboardList className="size-5 mr-2" />
+            Fiche Labo
           </Button>
         </Link>
       </motion.div>
