@@ -195,15 +195,32 @@ export function getDefaultCalibration(): CalibrationMap {
     "check_Uree": c(COL4_X, jauneY(8), "Urée", "tube_jaune"),
     "check_Vit B12": c(COL4_X, jauneY(9), "Vit B12", "tube_jaune"),
     "check_Vit D": c(COL4_X, jauneY(10), "Vit D", "tube_jaune"),
+    "text_tubeJaune_autre": t(15, jauneY(17), "Autre (Tube jaune)", "tube_jaune"),
 
     // CARDIAQUES
     "check_NTproBNP": c(18, 590, "NTproBNP", "cardiaques"),
     "check_Troponine": c(88, 590, "Troponine", "cardiaques"),
     "check_Electrophorese des protides / Immunotypage": c(20, 608, "Electrophorèse prot.", "cardiaques"),
+    // Signes cliniques cardiaques
+    "check_cardio_douleurs_thoraciques": c(20, 618, "Douleurs thoraciques", "cardiaques"),
+    "text_cardio_coronarographie_date": t(200, 618, "Coronarographie récente — date", "cardiaques"),
 
     // RHUMATO
     "check_ENA / AAN / ACADN": c(18, 635, "ENA/AAN/ACADN", "rhumato"),
     "check_Facteurs rhumatoides": c(160, 635, "Facteurs rhumatoïdes / Latex Waaler-Rose", "rhumato"),
+    // Signes cliniques rhumato
+    "check_rhumato_douleurs_articulaires": c(18, 645, "Douleurs articulaires et/ou musculaires", "rhumato"),
+    "check_rhumato_douleurs_diffuses": c(250, 645, "Douleurs diffuses", "rhumato"),
+    "check_rhumato_deformation_articulations": c(18, 655, "Déformation des articulations", "rhumato"),
+    "check_rhumato_secheresse_muqueuses": c(250, 655, "Sécheresse des muqueuses", "rhumato"),
+    "check_rhumato_taches_cutanees": c(18, 665, "Tâches cutanées", "rhumato"),
+    "check_rhumato_asthenie": c(250, 665, "Asthénie", "rhumato"),
+    "check_rhumato_amaigrissement": c(18, 675, "Amaigrissement", "rhumato"),
+    "check_rhumato_oedemes": c(250, 675, "\u0152dèmes", "rhumato"),
+    "check_rhumato_antecedents_chikungunya": c(18, 685, "Antécédents infection virale (Chikungunya)", "rhumato"),
+    // Pathologie rhumato
+    "check_rhumato_lupus": c(18, 695, "Lupus", "rhumato"),
+    "check_rhumato_polyarthrite": c(250, 695, "Polyarthrite rhumatoïde", "rhumato"),
 
     // SEROLOGIES
     "check_Serologie H.Pylori": c(22, 675, "Séro. H.Pylori", "serologies"),
@@ -212,6 +229,7 @@ export function getDefaultCalibration(): CalibrationMap {
 
     // CHLORDECONE
     "check_Chlordecone": c(20, 692, "Chlordécone", "chlordecone"),
+    "text_chlordecone_lieu_profession": t(100, 692, "Lieu de naissance et profession", "chlordecone"),
 
     // TUBE VERT
     "check_Bicarbonates / Reserve alcaline": c(465, 692, "Bicarb/Rés. alc.", "tube_vert"),
@@ -226,6 +244,7 @@ export function getDefaultCalibration(): CalibrationMap {
     "check_Electrophorese HB": c(20, 755, "Electrophorèse HB", "tube_violet"),
     "check_RAI": c(18, 787, "RAI", "tube_violet"),
     "check_Groupe sanguin": c(185, 787, "Groupe sanguin", "tube_violet"),
+    "text_tubeViolet_paludisme": t(18, 770, "Paludisme", "tube_violet"),
 
     // TUBE GRIS
     "check_Glycemie a Jeun": c(490, 730, "Glycémie à jeun", "tube_gris"),
