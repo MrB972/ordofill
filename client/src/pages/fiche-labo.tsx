@@ -406,29 +406,9 @@ export default function FicheLaboPage() {
   const [p2_autres_localisation, setP2AutresLocalisation] = useState("");
   const [p2_autres_contexte, setP2AutresContexte] = useState("");
 
-  // Réception laboratoire
-  const [p2_secretaire, setP2Secretaire] = useState("");
-  const [p2_technicien, setP2Technicien] = useState("");
-  const [p2_reception_date, setP2ReceptionDate] = useState("");
-  const [p2_reception_heure, setP2ReceptionHeure] = useState("");
-
-  // Non-conformité
-  const [p2_nc_identPrelevement, setP2NcIdentPrelevement] = useState(false);
-  const [p2_nc_ordonnance, setP2NcOrdonnance] = useState(false);
-  const [p2_nc_tubesTrop, setP2NcTubesTrop] = useState(false);
-  const [p2_nc_tubesManquants, setP2NcTubesManquants] = useState(false);
-  const [p2_nc_caillotHemolyse, setP2NcCaillotHemolyse] = useState(false);
-  const [p2_nc_tubesPerimes, setP2NcTubesPerimes] = useState(false);
-  const [p2_nc_identPatient, setP2NcIdentPatient] = useState(false);
-  const [p2_nc_prelevHeure, setP2NcPrelevHeure] = useState(false);
-  const [p2_nc_delai, setP2NcDelai] = useState(false);
-  const [p2_nc_delaiDerogation, setP2NcDelaiDerogation] = useState(false);
-  const [p2_nc_renseignementsCliniques, setP2NcRenseignementsCliniques] = useState(false);
-  const [p2_nc_autre, setP2NcAutre] = useState("");
-
   // Collapsed state for Page 2 sections (all collapsed by default)
   const [p2CollapsedSections, setP2CollapsedSections] = useState<Set<string>>(
-    new Set(["p2_rc_urinaires", "p2_biochimie_urinaire", "p2_ecbu", "p2_rc_ecbu", "p2_etat_physio", "p2_plaie_pus", "p2_selles", "p2_hemocultures", "p2_autres", "p2_reception", "p2_non_conformite"])
+    new Set(["p2_rc_urinaires", "p2_biochimie_urinaire", "p2_ecbu", "p2_rc_ecbu", "p2_etat_physio", "p2_plaie_pus", "p2_selles", "p2_hemocultures", "p2_autres"])
   );
 
   const toggleP2Section = (sectionId: string) => {
@@ -580,17 +560,6 @@ export default function FicheLaboPage() {
     if (p2_prelevPeripherique) checkSet.add("check_p2_prelevPeripherique");
     if (p2_prelevCatheter) checkSet.add("check_p2_prelevCatheter");
     if (p2_suspicionEndocardite) checkSet.add("check_p2_suspicionEndocardite");
-    if (p2_nc_identPrelevement) checkSet.add("check_p2_nc_identPrelevement");
-    if (p2_nc_ordonnance) checkSet.add("check_p2_nc_ordonnance");
-    if (p2_nc_tubesTrop) checkSet.add("check_p2_nc_tubesTrop");
-    if (p2_nc_tubesManquants) checkSet.add("check_p2_nc_tubesManquants");
-    if (p2_nc_caillotHemolyse) checkSet.add("check_p2_nc_caillotHemolyse");
-    if (p2_nc_tubesPerimes) checkSet.add("check_p2_nc_tubesPerimes");
-    if (p2_nc_identPatient) checkSet.add("check_p2_nc_identPatient");
-    if (p2_nc_prelevHeure) checkSet.add("check_p2_nc_prelevHeure");
-    if (p2_nc_delai) checkSet.add("check_p2_nc_delai");
-    if (p2_nc_delaiDerogation) checkSet.add("check_p2_nc_delaiDerogation");
-    if (p2_nc_renseignementsCliniques) checkSet.add("check_p2_nc_renseignementsCliniques");
     setPreviewData({
       ideName: user?.fullName ?? "",
       ideCabinet: user?.cabinetName ?? "",
@@ -670,11 +639,7 @@ export default function FicheLaboPage() {
         text_p2_autres_nature: p2_autres_nature,
         text_p2_autres_localisation: p2_autres_localisation,
         text_p2_autres_contexte: p2_autres_contexte,
-        text_p2_secretaire: p2_secretaire,
-        text_p2_technicien: p2_technicien,
-        text_p2_reception_date: p2_reception_date,
-        text_p2_reception_heure: p2_reception_heure,
-        text_p2_nc_autre: p2_nc_autre,
+
       },
     });
   }, [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu,
@@ -718,10 +683,7 @@ export default function FicheLaboPage() {
     p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter,
     p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite,
     p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte,
-    p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure,
-    p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants,
-    p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure,
-    p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre]);
+]);
 
   // Fetch OrdoFill patients
   const { data: ordofillPatients = [], isLoading: ordofillLoading } = useQuery<Patient[]>({
@@ -882,11 +844,7 @@ export default function FicheLaboPage() {
     p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter,
     p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite,
     p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte,
-    p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure,
-    p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants,
-    p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure,
-    p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues, nomNaissanceVal, lieuNaissance, etablissementSoins, demandeEtiquettes, pathologieConnue, pathologieConnueTexte, cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie, cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate, cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres, sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris, gppHeure, gppApresDejeuner, gppApresPetitDejeuner, tubeJauneAutre, cardioDouleursThoraciques, cardioCoronarographieDate, rhumatoDouleursArticulaires, rhumatoDouleursDiffuses, rhumatoDeformationArticulations, rhumatoSecheresseMuqueuses, rhumatoTachesCutanees, rhumatoAsthenie, rhumatoAmaigrissement, rhumatoOedemes, rhumatoAntecedentsChikungunya, rhumatoLupus, rhumatoPolyarthrite, tubeVioletPaludisme, chlordeconeLieuProfession, p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire, p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon, p2_proteinurie, p2_glycosurie, p2_microAlbuminurie, p2_ionoUrinaire, p2_ureeUrinaire, p2_acUriqueUrinaire, p2_creatinineUrinaire, p2_calciumUrinaire, p2_phosphoreUrinaire, p2_biochimieAutre, p2_biochimieAutreTexte, p2_ecbu_date, p2_ecbu_heure, p2_2emeJet, p2_surSonde, p2_surSondeType, p2_apresChangementSonde, p2_sondage, p2_collecteurBebe, p2_collecteurPenien, p2_ecbuAutre, p2_fievreEcbu, p2_douleursPubiennes, p2_brulure, p2_douleursMictionnelles, p2_pollakiurie, p2_ecoulement, p2_douleursLombaires, p2_hematurieMacro, p2_autreMotifEcbu, p2_mictionsImperieuses, p2_absenceSignes, p2_dysurie, p2_grossesseEtat, p2_bilanPreop, p2_chimiotherapieEtat, p2_greffe, p2_dialyse, p2_hospiRecente, p2_antibio7j, p2_antibioLequel, p2_plaie_date, p2_plaie_heure, p2_plaie_aspect, p2_plaie_localisation, p2_plaie_contexte, p2_coproculture, p2_parasitologie, p2_sangSelles, p2_selles_date, p2_selles_heure, p2_diarrhees, p2_douleursIntestinales, p2_constipation, p2_sellesAutre, p2_voyageZone, p2_medecineTravail, p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter, p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite, p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte, p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure, p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants, p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure, p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre]);
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues, nomNaissanceVal, lieuNaissance, etablissementSoins, demandeEtiquettes, pathologieConnue, pathologieConnueTexte, cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie, cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate, cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres, sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris, gppHeure, gppApresDejeuner, gppApresPetitDejeuner, tubeJauneAutre, cardioDouleursThoraciques, cardioCoronarographieDate, rhumatoDouleursArticulaires, rhumatoDouleursDiffuses, rhumatoDeformationArticulations, rhumatoSecheresseMuqueuses, rhumatoTachesCutanees, rhumatoAsthenie, rhumatoAmaigrissement, rhumatoOedemes, rhumatoAntecedentsChikungunya, rhumatoLupus, rhumatoPolyarthrite, tubeVioletPaludisme, chlordeconeLieuProfession, p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire, p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon, p2_proteinurie, p2_glycosurie, p2_microAlbuminurie, p2_ionoUrinaire, p2_ureeUrinaire, p2_acUriqueUrinaire, p2_creatinineUrinaire, p2_calciumUrinaire, p2_phosphoreUrinaire, p2_biochimieAutre, p2_biochimieAutreTexte, p2_ecbu_date, p2_ecbu_heure, p2_2emeJet, p2_surSonde, p2_surSondeType, p2_apresChangementSonde, p2_sondage, p2_collecteurBebe, p2_collecteurPenien, p2_ecbuAutre, p2_fievreEcbu, p2_douleursPubiennes, p2_brulure, p2_douleursMictionnelles, p2_pollakiurie, p2_ecoulement, p2_douleursLombaires, p2_hematurieMacro, p2_autreMotifEcbu, p2_mictionsImperieuses, p2_absenceSignes, p2_dysurie, p2_grossesseEtat, p2_bilanPreop, p2_chimiotherapieEtat, p2_greffe, p2_dialyse, p2_hospiRecente, p2_antibio7j, p2_antibioLequel, p2_plaie_date, p2_plaie_heure, p2_plaie_aspect, p2_plaie_localisation, p2_plaie_contexte, p2_coproculture, p2_parasitologie, p2_sangSelles, p2_selles_date, p2_selles_heure, p2_diarrhees, p2_douleursIntestinales, p2_constipation, p2_sellesAutre, p2_voyageZone, p2_medecineTravail, p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter, p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite, p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -1088,22 +1046,7 @@ export default function FicheLaboPage() {
     setP2AutresNature(d.p2_autres_nature ?? "");
     setP2AutresLocalisation(d.p2_autres_localisation ?? "");
     setP2AutresContexte(d.p2_autres_contexte ?? "");
-    setP2Secretaire(d.p2_secretaire ?? "");
-    setP2Technicien(d.p2_technicien ?? "");
-    setP2ReceptionDate(d.p2_reception_date ?? "");
-    setP2ReceptionHeure(d.p2_reception_heure ?? "");
-    setP2NcIdentPrelevement(d.p2_nc_identPrelevement ?? false);
-    setP2NcOrdonnance(d.p2_nc_ordonnance ?? false);
-    setP2NcTubesTrop(d.p2_nc_tubesTrop ?? false);
-    setP2NcTubesManquants(d.p2_nc_tubesManquants ?? false);
-    setP2NcCaillotHemolyse(d.p2_nc_caillotHemolyse ?? false);
-    setP2NcTubesPerimes(d.p2_nc_tubesPerimes ?? false);
-    setP2NcIdentPatient(d.p2_nc_identPatient ?? false);
-    setP2NcPrelevHeure(d.p2_nc_prelevHeure ?? false);
-    setP2NcDelai(d.p2_nc_delai ?? false);
-    setP2NcDelaiDerogation(d.p2_nc_delaiDerogation ?? false);
-    setP2NcRenseignementsCliniques(d.p2_nc_renseignementsCliniques ?? false);
-    setP2NcAutre(d.p2_nc_autre ?? "");
+
     setSelectedPatient(null);
     setDraftsOpen(false);
     toast({ title: "Brouillon charge", description: draft.patientName });
@@ -1284,23 +1227,8 @@ export default function FicheLaboPage() {
     setP2AutresNature("");
     setP2AutresLocalisation("");
     setP2AutresContexte("");
-    setP2Secretaire("");
-    setP2Technicien("");
-    setP2ReceptionDate("");
-    setP2ReceptionHeure("");
-    setP2NcIdentPrelevement(false);
-    setP2NcOrdonnance(false);
-    setP2NcTubesTrop(false);
-    setP2NcTubesManquants(false);
-    setP2NcCaillotHemolyse(false);
-    setP2NcTubesPerimes(false);
-    setP2NcIdentPatient(false);
-    setP2NcPrelevHeure(false);
-    setP2NcDelai(false);
-    setP2NcDelaiDerogation(false);
-    setP2NcRenseignementsCliniques(false);
-    setP2NcAutre("");
-    setP2CollapsedSections(new Set(["p2_rc_urinaires", "p2_biochimie_urinaire", "p2_ecbu", "p2_rc_ecbu", "p2_etat_physio", "p2_plaie_pus", "p2_selles", "p2_hemocultures", "p2_autres", "p2_reception", "p2_non_conformite"]));
+
+    setP2CollapsedSections(new Set(["p2_rc_urinaires", "p2_biochimie_urinaire", "p2_ecbu", "p2_rc_ecbu", "p2_etat_physio", "p2_plaie_pus", "p2_selles", "p2_hemocultures", "p2_autres"]));
     setSelectedPatient(null);
     setDraftsOpen(false);
   };
@@ -1525,24 +1453,7 @@ export default function FicheLaboPage() {
           text_p2_autres_nature: p2_autres_nature,
           text_p2_autres_localisation: p2_autres_localisation,
           text_p2_autres_contexte: p2_autres_contexte,
-          // Page 2 — Réception laboratoire
-          text_p2_secretaire: p2_secretaire,
-          text_p2_technicien: p2_technicien,
-          text_p2_reception_date: p2_reception_date,
-          text_p2_reception_heure: p2_reception_heure,
-          // Page 2 — Non-conformité
-          check_p2_nc_identPrelevement: p2_nc_identPrelevement ? "true" : "",
-          check_p2_nc_ordonnance: p2_nc_ordonnance ? "true" : "",
-          check_p2_nc_tubesTrop: p2_nc_tubesTrop ? "true" : "",
-          check_p2_nc_tubesManquants: p2_nc_tubesManquants ? "true" : "",
-          check_p2_nc_caillotHemolyse: p2_nc_caillotHemolyse ? "true" : "",
-          check_p2_nc_tubesPerimes: p2_nc_tubesPerimes ? "true" : "",
-          check_p2_nc_identPatient: p2_nc_identPatient ? "true" : "",
-          check_p2_nc_prelevHeure: p2_nc_prelevHeure ? "true" : "",
-          check_p2_nc_delai: p2_nc_delai ? "true" : "",
-          check_p2_nc_delaiDerogation: p2_nc_delaiDerogation ? "true" : "",
-          check_p2_nc_renseignementsCliniques: p2_nc_renseignementsCliniques ? "true" : "",
-          text_p2_nc_autre: p2_nc_autre,
+
         },
       });
 
@@ -2517,48 +2428,6 @@ export default function FicheLaboPage() {
         </div>
       </>)}
 
-      {p2Section("p2_reception", "Réception laboratoire", <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Secrétaire</Label>
-            <Input value={p2_secretaire} onChange={(e) => setP2Secretaire(e.target.value)} placeholder="Nom" className="h-8 text-sm" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Technicien</Label>
-            <Input value={p2_technicien} onChange={(e) => setP2Technicien(e.target.value)} placeholder="Nom" className="h-8 text-sm" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Date réception</Label>
-            <Input type="date" value={p2_reception_date} onChange={(e) => setP2ReceptionDate(e.target.value)} className="h-8 text-sm" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Heure réception</Label>
-            <Input type="time" value={p2_reception_heure} onChange={(e) => setP2ReceptionHeure(e.target.value)} className="h-8 text-sm" />
-          </div>
-        </div>
-      </>)}
-
-      {p2Section("p2_non_conformite", "Non-conformité", <>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_identPrelevement} onCheckedChange={(v) => setP2NcIdentPrelevement(!!v)} />Ident. prélèvement</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_ordonnance} onCheckedChange={(v) => setP2NcOrdonnance(!!v)} />Ordonnance</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_tubesTrop} onCheckedChange={(v) => setP2NcTubesTrop(!!v)} />Tubes en trop</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_tubesManquants} onCheckedChange={(v) => setP2NcTubesManquants(!!v)} />Tubes manquants</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_caillotHemolyse} onCheckedChange={(v) => setP2NcCaillotHemolyse(!!v)} />Caillot/Hémolyse</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_tubesPerimes} onCheckedChange={(v) => setP2NcTubesPerimes(!!v)} />Tubes périmés</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_identPatient} onCheckedChange={(v) => setP2NcIdentPatient(!!v)} />Ident. patient</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_prelevHeure} onCheckedChange={(v) => setP2NcPrelevHeure(!!v)} />Prélèv./Heure</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_delai} onCheckedChange={(v) => setP2NcDelai(!!v)} />Délai</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_delaiDerogation} onCheckedChange={(v) => setP2NcDelaiDerogation(!!v)} />Délai (dérogation)</label>
-          <label className="flex items-center gap-2 text-xs cursor-pointer"><Checkbox checked={p2_nc_renseignementsCliniques} onCheckedChange={(v) => setP2NcRenseignementsCliniques(!!v)} />Rens. cliniques</label>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Autre NC</Label>
-          <Input value={p2_nc_autre} onChange={(e) => setP2NcAutre(e.target.value)} placeholder="Préciser..." className="h-8 text-sm" />
-        </div>
-      </>)}
     </div>
   );
 

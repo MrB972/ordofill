@@ -386,24 +386,9 @@ export function getDefaultCalibration(): CalibrationMap {
     "text_p2_autres_contexte": t(100, 625, "Contexte clinique", "p2_autres"),
 
     // RÉCEPTION LABORATOIRE (p2)
-    "text_p2_secretaire": t(100, 660, "Secrétaire — Identité", "p2_reception"),
-    "text_p2_technicien": t(340, 660, "Technicien — Identité", "p2_reception"),
-    "text_p2_reception_date": t(340, 675, "Date", "p2_reception"),
-    "text_p2_reception_heure": t(480, 675, "Heure", "p2_reception"),
 
     // NON-CONFORMITÉ (p2)
-    "check_p2_nc_identPrelevement": c(15, 710, "Identification prélèvement", "p2_non_conformite"),
-    "check_p2_nc_ordonnance": c(170, 710, "Ordonnance", "p2_non_conformite"),
-    "check_p2_nc_tubesTrop": c(300, 710, "Tubes en trop", "p2_non_conformite"),
-    "check_p2_nc_tubesManquants": c(390, 710, "Tubes manquants", "p2_non_conformite"),
-    "check_p2_nc_caillotHemolyse": c(490, 710, "Caillot, hémolyse, volume", "p2_non_conformite"),
-    "check_p2_nc_tubesPerimes": c(15, 725, "Tubes périmés", "p2_non_conformite"),
-    "check_p2_nc_identPatient": c(120, 725, "Identification patient", "p2_non_conformite"),
-    "check_p2_nc_prelevHeure": c(250, 725, "Prélèvement : préleveur-heure", "p2_non_conformite"),
-    "check_p2_nc_delai": c(430, 725, "DELAI", "p2_non_conformite"),
-    "check_p2_nc_delaiDerogation": c(490, 725, "DELAI + dérogation", "p2_non_conformite"),
-    "check_p2_nc_renseignementsCliniques": c(180, 740, "Renseignements cliniques", "p2_non_conformite"),
-    "text_p2_nc_autre": t(50, 740, "Autre", "p2_non_conformite"),
+
   };
 }
 
@@ -435,15 +420,14 @@ export const CALIBRATION_SECTIONS = [
   { id: "p2_selles", label: "P2 — Selles", color: "#A855F7" },
   { id: "p2_hemocultures", label: "P2 — Hémocultures", color: "#F43F5E" },
   { id: "p2_autres", label: "P2 — Autres", color: "#6B7280" },
-  { id: "p2_reception", label: "P2 — Réception laboratoire", color: "#3B82F6" },
-  { id: "p2_non_conformite", label: "P2 — Non-conformité", color: "#DC2626" },
+
 ];
 
 /** Set of section IDs that belong to Page 2 of the PDF */
 export const PAGE2_SECTIONS = new Set([
   "p2_rc_urinaires", "p2_biochimie_urinaire", "p2_ecbu", "p2_rc_ecbu",
   "p2_etat_physio", "p2_plaie_pus", "p2_selles", "p2_hemocultures",
-  "p2_autres", "p2_reception", "p2_non_conformite",
+  "p2_autres",
 ]);
 
 // ---- In-memory store (singleton) ----
