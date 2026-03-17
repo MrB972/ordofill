@@ -167,13 +167,25 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
     textDraw(str, x, topY, size, bold, ws, getTargetPage(calKey));
   }
 
-  // Helper: draw an X in a checkbox at top-down coordinates
+  // Helper: draw an X in a checkbox at top-down coordinates.
+  // The calibration preview uses CSS transform: translate(-25%, -60%)
+  // so the calibrated (x,y) is at ~25% of X-width from left, ~60% of height from top.
+  // pdf-lib drawText anchors at baseline-left, so we must offset accordingly.
   function check(x: number, topY: number, calKey?: string) {
     const size = calKey ? getFontSize(cal, calKey, 8) : 8;
     const target = calKey ? getTargetPage(calKey) : page;
+    // Match CSS translate(-25%, -60%): shift left by 25% of char width, 
+    // and compute baseline from the 60%-from-top anchor point
+    const charWidth = fontBold.widthOfTextAtSize("X", size);
+    const xOffset = -0.25 * charWidth;
+    // CSS: visual_top = y - 0.60*fontSize, baseline = visual_top + capHeight
+    // capHeight ≈ 0.718 * fontSize for Helvetica
+    // So baseline_top_down = y - 0.60*size + 0.718*size = y + 0.118*size
+    // pdf-lib baseline_y = PH - baseline_top_down = Y(y) - 0.118*size
+    const yOffset = -0.118 * size;
     target.drawText("X", {
-      x: x + 1,
-      y: Y(topY) - 1,
+      x: x + xOffset,
+      y: Y(topY) + yOffset,
       size,
       font: fontBold,
       color: black,
@@ -394,11 +406,13 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
         const xBoldFont = fontBold;
         const targetPage = getTargetPage(key);
 
+        // Combo preview uses translate(0, -80%) — same as text, no special check offset.
+        // The X in a combo is rendered as inline text, not a standalone checkbox.
         if (order === "check_text") {
           // X first, then text
           let curX = entry.x;
           if (isChecked) {
-            targetPage.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
+            targetPage.drawText("X", { x: curX, y: Y(entry.y), size, font: xBoldFont, color: black });
           }
           const xWidth = xBoldFont.widthOfTextAtSize("X", size);
           curX += xWidth + (ws > 0 ? ws : 4); // use wordSpacing or 4pt gap
@@ -420,7 +434,7 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
             curX += textWidth + (ws > 0 ? ws : 4);
           }
           if (isChecked) {
-            targetPage.drawText("X", { x: curX + 1, y: Y(entry.y) - 1, size, font: xBoldFont, color: black });
+            targetPage.drawText("X", { x: curX, y: Y(entry.y), size, font: xBoldFont, color: black });
           }
         }
       } else if (entry.type === "check") {
