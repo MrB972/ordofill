@@ -445,6 +445,16 @@ export async function generateCerballiancePDF(data: CerballiancePDFData): Promis
         if (value === "true") {
           check(entry.x, entry.y, key);
         }
+      } else if (entry.type === "date") {
+        // Custom date field — convert yyyy-mm-dd → dd/mm/yyyy
+        if (value) {
+          text(formatDateFR(value), key, entry.x, entry.y);
+        }
+      } else if (entry.type === "heure") {
+        // Custom time field — value is HH:MM, render as-is
+        if (value) {
+          text(value, key, entry.x, entry.y);
+        }
       } else {
         // Custom text field — auto-convert yyyy-mm-dd dates to dd/mm/yyyy
         if (value) {

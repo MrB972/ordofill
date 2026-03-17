@@ -1964,9 +1964,11 @@ export default function FicheLaboPage() {
   // --- Custom fields card ---
   const customTextFields = Object.entries(customFields).filter(([, f]) => f.type === "text");
   const customCheckFields = Object.entries(customFields).filter(([, f]) => f.type === "check");
+  const customDateFields = Object.entries(customFields).filter(([, f]) => f.type === "date");
+  const customHeureFields = Object.entries(customFields).filter(([, f]) => f.type === "heure");
   const customComboFields = Object.entries(customFields).filter(([, f]) => f.type === "combo");
   const customComboDateFields = Object.entries(customFields).filter(([, f]) => f.type === "combo_date");
-  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0 || customComboFields.length > 0 || customComboDateFields.length > 0;
+  const hasCustomFields = customTextFields.length > 0 || customCheckFields.length > 0 || customDateFields.length > 0 || customHeureFields.length > 0 || customComboFields.length > 0 || customComboDateFields.length > 0;
 
   const customFieldsCard = hasCustomFields ? (
     <Card className="glass rounded-xl border-purple-500/20">
@@ -1992,6 +1994,46 @@ export default function FicheLaboPage() {
                   placeholder={field.label}
                   className="h-8 text-sm"
                   data-testid={`custom-field-${key}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {customDateFields.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CalendarRange className="size-3" />
+              Date
+            </div>
+            {customDateFields.map(([key, field]) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-xs">{field.label}</Label>
+                <Input
+                  type="date"
+                  value={customFieldValues[key] ?? ""}
+                  onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                  className="h-8 text-sm"
+                  data-testid={`custom-date-${key}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {customHeureFields.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="size-3" />
+              Heure
+            </div>
+            {customHeureFields.map(([key, field]) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-xs">{field.label}</Label>
+                <Input
+                  type="time"
+                  value={customFieldValues[key] ?? ""}
+                  onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                  className="h-8 text-sm"
+                  data-testid={`custom-heure-${key}`}
                 />
               </div>
             ))}

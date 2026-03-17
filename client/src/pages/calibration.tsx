@@ -106,7 +106,7 @@ export default function CalibrationPage() {
   // Add field dialog
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newFieldLabel, setNewFieldLabel] = useState("");
-  const [newFieldType, setNewFieldType] = useState<"text" | "check" | "combo" | "combo_date">("text");
+  const [newFieldType, setNewFieldType] = useState<"text" | "check" | "date" | "heure" | "combo" | "combo_date">("text");
   const [newFieldComboOrder, setNewFieldComboOrder] = useState<ComboOrder>("check_text");
   const [newFieldSection, setNewFieldSection] = useState("header");
   // Expanded detail row
@@ -249,7 +249,7 @@ export default function CalibrationPage() {
   const handleAddField = () => {
     if (!newFieldLabel.trim()) return;
     // Generate a unique key
-    const prefix = newFieldType === "check" ? "check_" : newFieldType === "combo" ? "combo_" : newFieldType === "combo_date" ? "combo_date_" : "text_";
+    const prefix = newFieldType === "check" ? "check_" : newFieldType === "combo" ? "combo_" : newFieldType === "combo_date" ? "combo_date_" : newFieldType === "date" ? "date_" : newFieldType === "heure" ? "heure_" : "text_";
     const slug = newFieldLabel.trim().replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]/g, "");
     let key = `${prefix}${slug}`;
     // Ensure uniqueness
@@ -543,6 +543,12 @@ export default function CalibrationPage() {
                     text: order === "check_text" ? `X ${textPart}` : `${textPart} X`,
                     isCheck: false,
                   };
+                } else if (field.type === "date") {
+                  const dateVal = getPreviewValueForField(key, previewData);
+                  preview = dateVal ?? { text: "01/01/2026", isCheck: false };
+                } else if (field.type === "heure") {
+                  const heureVal = getPreviewValueForField(key, previewData);
+                  preview = heureVal ?? { text: "08:00", isCheck: false };
                 } else {
                   preview = getPreviewValueForField(key, previewData) ?? { text: field.label, isCheck: false };
                 }
@@ -777,7 +783,7 @@ export default function CalibrationPage() {
                                 )}
 
                                 <span className="text-muted-foreground text-[10px] shrink-0">
-                                  {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : field.type === "combo_date" ? "X+D" : "T"}
+                                  {field.type === "check" ? "☑" : field.type === "combo" ? "X+T" : field.type === "combo_date" ? "X+D" : field.type === "date" ? "D" : field.type === "heure" ? "H" : "T"}
                                 </span>
 
                                 {/* Desktop: coords + action buttons inline */}
@@ -885,7 +891,7 @@ export default function CalibrationPage() {
                                   </div>
 
                                   {/* Word spacing — for text, combo, and combo_date fields */}
-                                  {(field.type === "text" || field.type === "combo" || field.type === "combo_date") && (
+                                  {(field.type === "text" || field.type === "date" || field.type === "heure" || field.type === "combo" || field.type === "combo_date") && (
                                     <div className="space-y-1">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -968,13 +974,15 @@ export default function CalibrationPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Type</Label>
-              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check" | "combo" | "combo_date")}>
+              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "check" | "date" | "heure" | "combo" | "combo_date")}>
                 <SelectTrigger className="text-sm" data-testid="new-field-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="text">Texte (T)</SelectItem>
-                  <SelectItem value="check">Case à cocher (☑)</SelectItem>
+                  <SelectItem value="check">Case à cocher</SelectItem>
+                  <SelectItem value="text">Texte libre</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="heure">Heure</SelectItem>
                   <SelectItem value="combo">Combo (X + Texte)</SelectItem>
                   <SelectItem value="combo_date">Combo (X + Date)</SelectItem>
                 </SelectContent>

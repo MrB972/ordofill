@@ -17,7 +17,7 @@ export interface FieldCoord {
   x: number;
   y: number;
   label: string;
-  type: "check" | "text" | "combo" | "combo_date";
+  type: "check" | "text" | "date" | "heure" | "combo" | "combo_date";
   section: string;
   /** Font size in PDF points. Default: 8 for text, 8 for checks */
   fontSize: number;
