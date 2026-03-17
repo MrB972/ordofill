@@ -300,6 +300,9 @@ export default function FicheLaboPage() {
   const [rhumatoLupus, setRhumatoLupus] = useState(false);
   const [rhumatoPolyarthrite, setRhumatoPolyarthrite] = useState(false);
 
+  // Section enrichments — Tube violet EDTA
+  const [tubeVioletPaludisme, setTubeVioletPaludisme] = useState("");
+
   // Section enrichments — Chlordécone
   const [chlordeconeLieuProfession, setChlordeconeLieuProfession] = useState("");
 
@@ -635,6 +638,7 @@ export default function FicheLaboPage() {
         // Section enrichment text values
         text_tubeJaune_autre: tubeJauneAutre,
         text_cardio_coronarographie_date: cardioCoronarographieDate,
+        text_tubeViolet_paludisme: tubeVioletPaludisme,
         text_chlordecone_lieu_profession: chlordeconeLieuProfession,
         // Page 2 text values
         text_p2_antibio: p2_antibio,
@@ -694,7 +698,7 @@ export default function FicheLaboPage() {
     rhumatoDouleursArticulaires, rhumatoDouleursDiffuses, rhumatoDeformationArticulations,
     rhumatoSecheresseMuqueuses, rhumatoTachesCutanees, rhumatoAsthenie,
     rhumatoAmaigrissement, rhumatoOedemes, rhumatoAntecedentsChikungunya,
-    rhumatoLupus, rhumatoPolyarthrite, chlordeconeLieuProfession,
+    rhumatoLupus, rhumatoPolyarthrite, tubeVioletPaludisme, chlordeconeLieuProfession,
     // Page 2
     p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire,
     p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon,
@@ -858,7 +862,7 @@ export default function FicheLaboPage() {
     rhumatoDouleursArticulaires, rhumatoDouleursDiffuses, rhumatoDeformationArticulations,
     rhumatoSecheresseMuqueuses, rhumatoTachesCutanees, rhumatoAsthenie,
     rhumatoAmaigrissement, rhumatoOedemes, rhumatoAntecedentsChikungunya,
-    rhumatoLupus, rhumatoPolyarthrite, chlordeconeLieuProfession,
+    rhumatoLupus, rhumatoPolyarthrite, tubeVioletPaludisme, chlordeconeLieuProfession,
     // Page 2
     p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire,
     p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon,
@@ -882,7 +886,7 @@ export default function FicheLaboPage() {
     p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants,
     p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure,
     p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre,
-  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues, nomNaissanceVal, lieuNaissance, etablissementSoins, demandeEtiquettes, pathologieConnue, pathologieConnueTexte, cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie, cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate, cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres, sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris, gppHeure, gppApresDejeuner, gppApresPetitDejeuner, tubeJauneAutre, cardioDouleursThoraciques, cardioCoronarographieDate, rhumatoDouleursArticulaires, rhumatoDouleursDiffuses, rhumatoDeformationArticulations, rhumatoSecheresseMuqueuses, rhumatoTachesCutanees, rhumatoAsthenie, rhumatoAmaigrissement, rhumatoOedemes, rhumatoAntecedentsChikungunya, rhumatoLupus, rhumatoPolyarthrite, chlordeconeLieuProfession, p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire, p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon, p2_proteinurie, p2_glycosurie, p2_microAlbuminurie, p2_ionoUrinaire, p2_ureeUrinaire, p2_acUriqueUrinaire, p2_creatinineUrinaire, p2_calciumUrinaire, p2_phosphoreUrinaire, p2_biochimieAutre, p2_biochimieAutreTexte, p2_ecbu_date, p2_ecbu_heure, p2_2emeJet, p2_surSonde, p2_surSondeType, p2_apresChangementSonde, p2_sondage, p2_collecteurBebe, p2_collecteurPenien, p2_ecbuAutre, p2_fievreEcbu, p2_douleursPubiennes, p2_brulure, p2_douleursMictionnelles, p2_pollakiurie, p2_ecoulement, p2_douleursLombaires, p2_hematurieMacro, p2_autreMotifEcbu, p2_mictionsImperieuses, p2_absenceSignes, p2_dysurie, p2_grossesseEtat, p2_bilanPreop, p2_chimiotherapieEtat, p2_greffe, p2_dialyse, p2_hospiRecente, p2_antibio7j, p2_antibioLequel, p2_plaie_date, p2_plaie_heure, p2_plaie_aspect, p2_plaie_localisation, p2_plaie_contexte, p2_coproculture, p2_parasitologie, p2_sangSelles, p2_selles_date, p2_selles_heure, p2_diarrhees, p2_douleursIntestinales, p2_constipation, p2_sellesAutre, p2_voyageZone, p2_medecineTravail, p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter, p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite, p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte, p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure, p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants, p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure, p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre]);
+  }), [nomUsuel, prenoms, dateNaissance, adresse, sexe, telephone, numSecu, medecinTraitant, prescripteur, mutuelle, finDeDroit, resMedFaxer, resMedTelephoner, resMedPoster, resIdeTelephoner, resIdeSms, resPatLabo, resPatInternet, resPatSms, resPatOppose, controleDemande, pieceCni, piecePasseport, pieceTitre, datePrelevement, heurePrelevement, grossesse, fievre, traitements, urgent, renouvelable, dateRenouvelable, selectedAnticoagulant, posologie, inrCible, selectedAnalyses, patientSource, selectedPatient, customFieldValues, nomNaissanceVal, lieuNaissance, etablissementSoins, demandeEtiquettes, pathologieConnue, pathologieConnueTexte, cliniqueChimiotherapie, cliniqueAntibiotherapie, cliniqueDialyse, cliniqueSuiviHemopathie, cliniqueTraitementEPO, cliniqueTransfusion4mois, cliniqueInjectionRhophylac, cliniqueRhophylacDate, cliniqueMedicamentsDateHeure, cliniqueDateDernieresRegles, cliniqueAutres, sansGarrot, veinesDifficiles, prelevementAutres, nbTubesBleu, nbTubesJaune, nbTubesViolet, nbTubesGris, gppHeure, gppApresDejeuner, gppApresPetitDejeuner, tubeJauneAutre, cardioDouleursThoraciques, cardioCoronarographieDate, rhumatoDouleursArticulaires, rhumatoDouleursDiffuses, rhumatoDeformationArticulations, rhumatoSecheresseMuqueuses, rhumatoTachesCutanees, rhumatoAsthenie, rhumatoAmaigrissement, rhumatoOedemes, rhumatoAntecedentsChikungunya, rhumatoLupus, rhumatoPolyarthrite, tubeVioletPaludisme, chlordeconeLieuProfession, p2_antibio, p2_chimiotherapie, p2_fievreUrines, p2_grossesseUrines, p2_autreRcUrinaire, p2_24h, p2_24h_dateDebut, p2_24h_dateFin, p2_diurese, p2_echantillon, p2_proteinurie, p2_glycosurie, p2_microAlbuminurie, p2_ionoUrinaire, p2_ureeUrinaire, p2_acUriqueUrinaire, p2_creatinineUrinaire, p2_calciumUrinaire, p2_phosphoreUrinaire, p2_biochimieAutre, p2_biochimieAutreTexte, p2_ecbu_date, p2_ecbu_heure, p2_2emeJet, p2_surSonde, p2_surSondeType, p2_apresChangementSonde, p2_sondage, p2_collecteurBebe, p2_collecteurPenien, p2_ecbuAutre, p2_fievreEcbu, p2_douleursPubiennes, p2_brulure, p2_douleursMictionnelles, p2_pollakiurie, p2_ecoulement, p2_douleursLombaires, p2_hematurieMacro, p2_autreMotifEcbu, p2_mictionsImperieuses, p2_absenceSignes, p2_dysurie, p2_grossesseEtat, p2_bilanPreop, p2_chimiotherapieEtat, p2_greffe, p2_dialyse, p2_hospiRecente, p2_antibio7j, p2_antibioLequel, p2_plaie_date, p2_plaie_heure, p2_plaie_aspect, p2_plaie_localisation, p2_plaie_contexte, p2_coproculture, p2_parasitologie, p2_sangSelles, p2_selles_date, p2_selles_heure, p2_diarrhees, p2_douleursIntestinales, p2_constipation, p2_sellesAutre, p2_voyageZone, p2_medecineTravail, p2_H1, p2_H2, p2_H3, p2_prelevPeripherique, p2_prelevCatheter, p2_hemo_date, p2_hemo_heure, p2_fievreTemp, p2_suspicionEndocardite, p2_autres_date, p2_autres_heure, p2_autres_nature, p2_autres_localisation, p2_autres_contexte, p2_secretaire, p2_technicien, p2_reception_date, p2_reception_heure, p2_nc_identPrelevement, p2_nc_ordonnance, p2_nc_tubesTrop, p2_nc_tubesManquants, p2_nc_caillotHemolyse, p2_nc_tubesPerimes, p2_nc_identPatient, p2_nc_prelevHeure, p2_nc_delai, p2_nc_delaiDerogation, p2_nc_renseignementsCliniques, p2_nc_autre]);
 
   useEffect(() => {
     // Only auto-save if there's meaningful data
@@ -1000,6 +1004,7 @@ export default function FicheLaboPage() {
     setRhumatoAntecedentsChikungunya(d.rhumatoAntecedentsChikungunya ?? false);
     setRhumatoLupus(d.rhumatoLupus ?? false);
     setRhumatoPolyarthrite(d.rhumatoPolyarthrite ?? false);
+    setTubeVioletPaludisme(d.tubeVioletPaludisme ?? "");
     setChlordeconeLieuProfession(d.chlordeconeLieuProfession ?? "");
     // Page 2
     setP2Antibio(d.p2_antibio ?? "");
@@ -1195,6 +1200,7 @@ export default function FicheLaboPage() {
     setRhumatoAntecedentsChikungunya(false);
     setRhumatoLupus(false);
     setRhumatoPolyarthrite(false);
+    setTubeVioletPaludisme("");
     setChlordeconeLieuProfession("");
     // Page 2
     setP2Antibio("");
@@ -1410,6 +1416,7 @@ export default function FicheLaboPage() {
           // Section enrichment text values
           text_tubeJaune_autre: tubeJauneAutre,
           text_cardio_coronarographie_date: cardioCoronarographieDate,
+          text_tubeViolet_paludisme: tubeVioletPaludisme,
           text_chlordecone_lieu_profession: chlordeconeLieuProfession,
           check_GPP_apres_dejeuner: gppApresDejeuner ? "true" : "",
           check_GPP_apres_petit_dejeuner: gppApresPetitDejeuner ? "true" : "",
@@ -2659,6 +2666,13 @@ export default function FicheLaboPage() {
                             </label>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {section.calibrationSectionId === "tube_violet" && (
+                      <div className="mt-3 pt-2 border-t border-border/30 space-y-1">
+                        <Label className="text-xs">Paludisme</Label>
+                        <Input value={tubeVioletPaludisme} onChange={(e) => setTubeVioletPaludisme(e.target.value)} placeholder="Préciser..." className="h-8 text-sm" data-testid="field-tube-violet-paludisme" />
                       </div>
                     )}
 
